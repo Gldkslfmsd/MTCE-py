@@ -4,7 +4,7 @@
 
 {% block content %}
 
-<h1>{{ comparison.name }}</h1>
+<h1>{{ system.name }}</h1>
 
 {% if comparison.description %}
     <p>{{ comparison.description }}</p>
@@ -40,15 +40,14 @@
 <table class="table table-hover">
   <thead>
     <tr>
-      <th scope="col">MT System</th>
       <th scope="col">Checkpoint</th>
       <th scope="col">BLEU</th>
     </tr>
   </thead>
   <tbody>
-  {% for sys,cp in systems_checkpoints %}
+  {% for cp in checkpoints %}
     <tr class="table-{% if forloop.counter|divisibleby:2 %}dark{% else %}light{% endif %}">
-        <th scope="row"><a href="{% url 'mtce:system_detail' sys.id %}">{{ sys }}</a></th>
+<!--      <th scope="row">{{ sys }}</th> !-->
       <td>{{ cp }}</td>
       <td>NA</td>
     </tr>

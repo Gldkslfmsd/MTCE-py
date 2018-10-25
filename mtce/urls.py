@@ -6,6 +6,7 @@ app_name = 'mtce'
 urlpatterns = [
     path('', views.index, name='index'),
     path('comparison/<int:comparison_id>/', views.comparison_detail, name='comparison_detail'),
+    path('system/<int:system_id>/', views.system_detail, name='system_detail'),
     path('help', views.help, name='help'),
     path('edit', views.edit, name='edit'),
 ]

@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 # Create your views here.
 
 from django.http import HttpResponse
-from .models import Comparison, Checkpoint
+from .models import Comparison, Checkpoint, MTSystem
 
 
 def get_comparisons():
@@ -59,3 +59,19 @@ def comparison_detail(request, comparison_id):
                    }
                   )
 
+
+def system_detail(request, system_id):
+
+    sys = get_object_or_404(MTSystem, pk=system_id)
+
+    comp = sys.comparison
+    checkpoints = sys.checkpoints()
+    return render(request,
+                  'mtce/system_detail.html',
+                  {'comparison': comp,
+                   'system': sys,
+                   'comparisons': get_comparisons(),
+                   'active': 'system',
+                   'checkpoints': checkpoints,
+                   }
+                  )
