@@ -3,7 +3,7 @@
 {% load jchart %}
 {% load i18n %}
 {% load bootstrap_themes %}
-{#% load bootstrap4 %#}
+{% load bootstrap4 %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -12,115 +12,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 	    {# Load CSS and JavaScript #}
-		{# % bootstrap_javascript % #}
-      {#% bootstrap_css %#}
-      {% bootstrap_styles theme='flatly' type='less' %}
+		{% bootstrap_javascript %}
+            <script></script>
+      {# % bootstrap_css % #}
+            <script></script>
+      {# % bootstrap_styles theme='flatly' type='css' % #}
+      <script></script>
+
+          <link rel="stylesheet" href="{% static 'mtce/bootstrap.css' %}" media="screen">
+      <link rel="stylesheet" href="{% static 'mtce/custom.min.css' %}" media="screen">
       {% bootstrap_script use_min=False %}
     </head>
     <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <a class="navbar-brand" href="#">Navbar</a>
+    <nav class="navbar navbar-expand-lg fixed-top navbar-dark bg-primary">
+  <a class="navbar-brand active" href="{% url 'mtce:index' %}">MTCE-py</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
 
   <div class="collapse navbar-collapse" id="navbarColor01">
     <ul class="navbar-nav mr-auto">
-      <li class="nav-item active">
-        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+
+
+	{% if comparisons %}
+            <li class="nav-item dropdown {% if active == 'comp' %}active{% endif %}">
+                <a class="nav-link dropdown-toggle {% if active == 'comp' %}active{% endif %}" data-toggle="dropdown" href="{% url 'mtce:index' %}" id="themes">Comparisons<span class="caret"></span></a>
+            <div class="dropdown-menu" aria-labelledby="themes">
+                {% for comp in comparisons %}
+                    <a class="dropdown-item {% if comp.id == comparison.id %}active{% endif %}" href="{% url 'mtce:comparison_detail' comp.id %}">{{ comp.name }}</a>
+                {% endfor %}
+            </div>
+            </li>
+    {% else %}
+      <li class="nav-item {% if active == 'comp' %}active{% endif %}">
+        <a class="nav-link" href="{% url 'mtce:index' %}">Comparisons</a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Features</a>
+	{% endif %}
+
+      <li class="nav-item {% if active == 'edit' %}active{% endif %}">
+        <a class="nav-link" href="{% url 'mtce:edit' %}">Edit</a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Pricing</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">About</a>
+
+      <li class="nav-item {% if active == 'help' %}active{% endif %}">
+        <a class="nav-link" href="{% url 'mtce:help' %}">Help</a>
       </li>
     </ul>
-    <form class="form-inline my-2 my-lg-0">
-      <input class="form-control mr-sm-2" type="text" placeholder="Search">
-      <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
-    </form>
   </div>
 </nav>
 
+    <div class="container">
+        {# Display django.contrib.messages as Bootstrap alerts #}
+        {% bootstrap_messages %}
+        {% block content %}{% endblock %}
+    </div>
 
 
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <a class="navbar-brand" href="#">Navbar</a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-
-  <div class="collapse navbar-collapse" id="navbarColor02">
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item active">
-        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Features</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Pricing</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">About</a>
-      </li>
-    </ul>
-    <form class="form-inline my-2 my-lg-0">
-      <input class="form-control mr-sm-2" type="text" placeholder="Search">
-      <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
-    </form>
-  </div>
-</nav>
-
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <a class="navbar-brand" href="#">Navbar</a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor02" aria-controls="navbarColor02" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-
-  <div class="collapse navbar-collapse" id="navbarColor02">
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item active">
-        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Features</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">Pricing</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">About</a>
-      </li>
-    </ul>
-    <form class="form-inline my-2 my-lg-0">
-      <input class="form-control mr-sm-2" type="text" placeholder="Search">
-      <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
-    </form>
-  </div>
-</nav>
-
-
-    	<div class="container">
-		  <div class="jumbotron">
-		    <h1>MTCE-py</h1>
-		   <!-- <p>User Interface for Quality Estimation of Machine Translation</p>
-		   !-->
-		  </div>
-		</div>
-		<div class="container">
-			{# Display django.contrib.messages as Bootstrap alerts #}
-			{# % bootstrap_messages % #}
-			{% block content %}{% endblock %}
-		</div>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<!--	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script> !-->
+		<script src="{% static 'mtce/jquery.min.js' %}"></script>
+    <script src="{% static 'mtce/popper.min.js' %}"></script>
+     <script src="{% static 'mtce/bootstrap.min.js' %}"></script>
+     <script src="{% static 'mtce/custom.js' %}"></script>
 	</body>
 </html>
