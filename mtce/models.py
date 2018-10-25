@@ -8,7 +8,7 @@ class StrName():
     def __str__(self):
         return self.name
 
-class Dataset(StrName, models.Model):
+class Comparison(StrName, models.Model):
 
     name = models.CharField(max_length=200)
 
@@ -27,7 +27,7 @@ class Dataset(StrName, models.Model):
 
 class MTSystem(StrName, models.Model):
     name = models.CharField(max_length=200)
-    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    comparison = models.ForeignKey(Comparison, on_delete=models.CASCADE)
 
     description = models.TextField(max_length=5000, default="", blank=True, help_text="Optional MTSystem description")
 

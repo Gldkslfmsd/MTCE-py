@@ -32,8 +32,11 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'mtce.apps.MtceConfig',
+    #'demo.apps.DemoConfig',
     'bootstrap4',
+    'bootstrap_themes',
     'jchart',
+    'nested_admin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

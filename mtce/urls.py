@@ -5,5 +5,5 @@ from . import views
 app_name = 'mtce'
 urlpatterns = [
     path('', views.index, name='index'),
-    path('dataset/<int:dataset_id>/', views.dataset_detail, name='dataset'),
+    path('comparison/<int:comparison_id>/', views.comparison_detail, name='comparison_detail'),
 ]

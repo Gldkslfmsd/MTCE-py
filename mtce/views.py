@@ -1,9 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 
 # Create your views here.
 
 from django.http import HttpResponse
-from .models import Dataset
+from .models import Comparison
 
 def index(request):
     return HttpResponse("Hello, world. You're at the index.")
@@ -13,7 +13,7 @@ def index(request):
     """
     The initial dashboard view with a list of tasks
     """
-    datasets = Dataset.objects.all() #order_by('name') \
+    comparisons = Comparison.objects.all() #order_by('name') \
        # .annotate(documents=Count('document')) \
        # .annotate(total_sentences=Count('document__sentence'))
     # tasks_table = TaskTable(tasks)
@@ -21,8 +21,16 @@ def index(request):
     return render(
         request,
         'mtce/index.html',
-        {'datasets': datasets},
+        {'comparisons': comparisons},
     )
 
-def dataset_detail(request, dataset_id):
-    return index(request)
+def comparison_detail(request, comparison_id):
+
+    comp = get_object_or_404(Comparison, pk=comparison_id)
+
+    print(comp)
+
+    return render(request,
+                  'mtce/comparison_detail.html',
+                  {'comparison': comp}
+                  )

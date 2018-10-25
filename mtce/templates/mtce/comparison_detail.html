@@ -1,0 +1,13 @@
+{% extends "mtce/base.html" %}
+
+{% block content %}
+
+<h1>{{ comparison.name }}</h1>
+
+{% if comparison.description %}
+    <p>{{ comparison.description }}</p>
+{% endif %}
+
+
+
+{% endblock %}

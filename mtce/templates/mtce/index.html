@@ -1,17 +1,17 @@
 {% extends "mtce/base.html" %}
 
 {% block content %}
-<h1>Datasets</h1>
+<h1>Comparisons</h1>
 <table class="table table-bordered table-hover table-responsive">
 	<th>name</th>
 	<th>description</th>
 	<!-- <th>documents</th>
 	<th>total sentences</th>
 	!-->
-    {% for dataset in datasets %}
+    {% for comp in comparisons %}
 	<tr>
-		<td><a href="{% url 'mtce:dataset' dataset.id %}">{{ dataset.name }}</a></td>
-		<td>{{ dataset.description }}</td>
+		<td><a href="{% url 'mtce:comparison_detail' comp.id %}">{{ comp.name }}</a></td>
+		<td>{{ comp.description }}</td>
 	<!--	<td>{{ task.documents }}</td>
 		<td>{{ task.total_sentences }}</td>
 		!-->
