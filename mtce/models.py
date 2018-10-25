@@ -1,37 +1,85 @@
 from django.db import models
 from django.utils.translation import ugettext as _
-
+import os
+import shutil
 # Create your models here.
 
-class StrName():
+class ModelBase():
 
     def __str__(self):
         return self.name
 
-class Comparison(StrName, models.Model):
+
+    ######################
+    # file structure
+
+    upload_to_base = "files"
+    upload_to_tmp = os.path.join("files","tmp")
+    structure_base = os.path.join("files","comparisons")
+
+    def copy_to(self, origin, new):
+        dir = os.path.dirname(new)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        shutil.copyfile(origin, new)
+
+
+
+class Comparison(ModelBase, models.Model):
 
     name = models.CharField(max_length=200)
 
-    sourcefile = models.FileField(
-        upload_to='files/dataset/sources',
+    origsourcefile = models.FileField(
+        upload_to=ModelBase.upload_to_tmp,
         help_text=_("Text file with one source sentence per line")
     )
 
-    referencefile = models.FileField(
-        upload_to='files/dataset/references',
+    origreferencefile = models.FileField(
+        upload_to=ModelBase.upload_to_tmp,
         help_text=_("Text file with one reference sentence per line")
     )
 
     description = models.TextField(max_length=5000, default="", blank=True, help_text="Optional dataset description")
 
+    def systems_checkpoints(self):
+        return ((s,c) for s in self.mtsystem_set.all() for c in s.checkpoint_set.all())
 
-class MTSystem(StrName, models.Model):
+    #################
+    # file structure
+
+    def sourcefile(self):
+        return os.path.join(self.base_dir(),"source.txt")
+
+    def referencefile(self):
+        return os.path.join(self.base_dir(),"reference.txt")
+
+    def base_dir(self):
+        basename = os.path.join(self.structure_base, "comparison_%d" % self.id)
+        return basename
+
+    def update_file_structure(self):
+        self.copy_to(self.origsourcefile.name, self.sourcefile())
+        self.copy_to(self.origreferencefile.name, self.referencefile())
+
+    def delete_file_structure(self):
+        shutil.rmtree(self.base_dir())
+
+
+
+class MTSystem(ModelBase, models.Model):
     name = models.CharField(max_length=200)
     comparison = models.ForeignKey(Comparison, on_delete=models.CASCADE)
 
     description = models.TextField(max_length=5000, default="", blank=True, help_text="Optional MTSystem description")
 
-class Checkpoint(StrName, models.Model):
+    def base_dir(self):
+        basename = os.path.join(self.comparison.base_dir(), "mtsystem_%d" % self.id)
+        return basename
+
+    def delete_file_structure(self):
+        shutil.rmtree(self.base_dir())
+
+class Checkpoint(ModelBase, models.Model):
     name = models.CharField(max_length=200)
     mtsystem = models.ForeignKey(MTSystem, on_delete=models.CASCADE)
 
@@ -40,8 +88,24 @@ class Checkpoint(StrName, models.Model):
     time = models.IntegerField(default=-1, help_text="Training time in number of seconds needed to obtain this checkpoint. Optional.")
 
 
-    translationfile = models.FileField(
-        upload_to='files/translations',
+    origtranslationfile = models.FileField(
+        upload_to=ModelBase.upload_to_tmp,
         help_text=_("Translation file")
     )
+
+    def comparison(self):
+        return self.mtsystem.comparison
+
+    def base_dir(self):
+        basename = os.path.join(self.mtsystem.base_dir(), "checkpoint_%d" % self.id)
+        return basename
+
+    def translationfile(self):
+        return os.path.join(self.base_dir(), "translation.txt")
+
+    def update_file_structure(self):
+        self.copy_to(self.origtranslationfile.name, self.translationfile())
+
+    def delete_file_structure(self):
+        shutil.rmtree(self.base_dir())
 

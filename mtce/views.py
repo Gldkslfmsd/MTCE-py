@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404
 # Create your views here.
 
 from django.http import HttpResponse
-from .models import Comparison
+from .models import Comparison, Checkpoint
 
 
 def get_comparisons():
@@ -49,12 +49,13 @@ def comparison_detail(request, comparison_id):
 
     comp = get_object_or_404(Comparison, pk=comparison_id)
 
-    print(comp)
-
+    systems_checkpoints = comp.systems_checkpoints()
     return render(request,
                   'mtce/comparison_detail.html',
                   {'comparison': comp,
                    'comparisons': get_comparisons(),
-                   'active': 'comp'}
+                   'active': 'comp',
+                   'systems_checkpoints': systems_checkpoints,
+                   }
                   )
 

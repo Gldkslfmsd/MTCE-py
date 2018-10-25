@@ -36,7 +36,28 @@
 </ul>
 <div id="myTabContent" class="tab-content">
   <div class="tab-pane fade active show" id="home">
-    <p>Raw denim you probably haven't heard of them jean shorts Austin. Nesciunt tofu stumptown aliqua, retro synth master cleanse. Mustache cliche tempor, williamsburg carles vegan helvetica. Reprehenderit butcher retro keffiyeh dreamcatcher synth. Cosby sweater eu banh mi, qui irure terry richardson ex squid. Aliquip placeat salvia cillum iphone. Seitan aliquip quis cardigan american apparel, butcher voluptate nisi qui.</p>
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th scope="col">MT System</th>
+      <th scope="col">Checkpoint</th>
+      <th scope="col">BLEU</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for sys,cp in systems_checkpoints %}
+    <tr class="table-{% if forloop.counter|divisibleby:2 %}dark{% else %}light{% endif %}">
+      <th scope="row">{{ sys }}</th>
+      <td>{{ cp }}</td>
+      <td>NA</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+
+
   </div>
   <div class="tab-pane fade" id="profile">
     <p>Food truck fixie locavore, accusamus mcsweeney's marfa nulla single-origin coffee squid. Exercitation +1 labore velit, blog sartorial PBR leggings next level wes anderson artisan four loko farm-to-table craft beer twee. Qui photo booth letterpress, commodo enim craft beer mlkshk aliquip jean shorts ullamco ad vinyl cillum PBR. Homo nostrud organic, assumenda labore aesthetic magna delectus mollit.</p>
