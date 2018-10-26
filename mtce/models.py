@@ -19,10 +19,15 @@ class ModelBase():
     upload_to_tmp = os.path.join("files","tmp")
     structure_base = os.path.join("files","comparisons")
 
+    @staticmethod
+    def name_to_und(name):
+        return name.replace(" ", '_').replace("/","-")
+
     def copy_to(self, origin, new):
         dir = os.path.dirname(new)
         if not os.path.exists(dir):
             os.makedirs(dir)
+        if origin == new: return
         shutil.copyfile(origin, new)
 
     def count_number_of_lines(self, A):
@@ -42,9 +47,16 @@ class ModelBase():
         return True
 
 
+class FileWrapper(models.Model):
 
+    is_imported = models.BooleanField(default=False)
+    is_corrupted = models.BooleanField(default=False)
+    is_checked = models.BooleanField(default=False)
 
-class Comparison(ModelBase, models.Model):
+    def clear_evals(self):
+        pass
+
+class Comparison(ModelBase, FileWrapper):
 
     name = models.CharField(max_length=200)
 
@@ -63,9 +75,7 @@ class Comparison(ModelBase, models.Model):
     def systems_checkpoints(self):
         return ((s,c) for s in self.mtsystem_set.all() for c in s.checkpoint_set.all())
 
-    is_imported = models.BooleanField(default=False)
-    is_corrupted = models.BooleanField(default=False)
-    is_checked = models.BooleanField(default=False)
+
 
     #################
     # file structure
@@ -77,7 +87,7 @@ class Comparison(ModelBase, models.Model):
         return os.path.join(self.base_dir(),"reference.txt")
 
     def base_dir(self):
-        basename = os.path.join(self.structure_base, "comparison_%d" % self.id)
+        basename = os.path.join(self.structure_base, self.name_to_und(self.name))#+"__%d" % self.id)
         return basename
 
     def update_file_structure(self):
@@ -92,9 +102,11 @@ class Comparison(ModelBase, models.Model):
 
 
     def delete_file_structure(self):
-        shutil.rmtree(self.base_dir())
+        if os.path.exists(self.base_dir()):
+            shutil.rmtree(self.base_dir())
 
-
+def create_MTSystem(name, comp):
+    return MTSystem(name=ModelBase.name_to_und(name),comparison=comp)
 
 class MTSystem(ModelBase, models.Model):
     name = models.CharField(max_length=200)
@@ -106,7 +118,7 @@ class MTSystem(ModelBase, models.Model):
         return self.checkpoint_set.all()
 
     def base_dir(self):
-        basename = os.path.join(self.comparison.base_dir(), "mtsystem_%d" % self.id)
+        basename = os.path.join(self.comparison.base_dir(), self.name_to_und(self.name))#+"__%d" % self.id)
         return basename
 
     def delete_file_structure(self):
@@ -114,7 +126,10 @@ class MTSystem(ModelBase, models.Model):
 
     is_imported = models.BooleanField(default=False)
 
-class Checkpoint(ModelBase, models.Model):
+def create_Checkpoint(name,trans,sys):
+    return Checkpoint(name=ModelBase.name_to_und(name),origtranslationfile=trans,mtsystem=sys)
+
+class Checkpoint(ModelBase, FileWrapper):
     name = models.CharField(max_length=200)
     mtsystem = models.ForeignKey(MTSystem, on_delete=models.CASCADE)
 
@@ -132,7 +147,7 @@ class Checkpoint(ModelBase, models.Model):
         return self.mtsystem.comparison
 
     def base_dir(self):
-        basename = os.path.join(self.mtsystem.base_dir(), "checkpoint_%d" % self.id)
+        basename = os.path.join(self.mtsystem.base_dir(), self.name_to_und(self.name))#+"__%d" % self.id)
         return basename
 
     def translationfile(self):
@@ -147,7 +162,80 @@ class Checkpoint(ModelBase, models.Model):
         self.save()
 
     def delete_file_structure(self):
-        shutil.rmtree(self.base_dir())
+        if os.path.exists(self.base_dir()):
+            shutil.rmtree(self.base_dir())
 
-    is_imported = models.BooleanField(default=False)
-    is_checked = models.BooleanField(default=False)
+from django.db.models.signals import post_save, pre_delete
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Comparison)
+@receiver(post_save, sender=Checkpoint)
+def post_save_receiver(senderclass=None, signal=None, instance=None, created=False, update_fields=None, raw=False, using='default', **kwargs):
+    instance.update_file_structure()
+
+
+@receiver(pre_delete, sender=Comparison)
+@receiver(pre_delete, sender=Checkpoint)
+@receiver(pre_delete, sender=MTSystem)
+def pre_delete_receiver(senderclass=None, signal=None, instance=None, created=False, update_fields=None, raw=False, using='default', **kwargs):
+    instance.delete_file_structure()
+
+##################
+
+import time
+
+type_dict = { 'source.txt':1, 'reference.txt': 2, 'translation.txt':3 }
+
+def create_DataImport(file, type, obj):
+    return DataImport(path=file,type=type_dict[type],object=obj,last_change=DataImport.last_modification_time(file))
+
+class DataImport(models.Model):
+    last_change = models.FloatField()
+    path = models.CharField(max_length=1024)
+    object = models.ForeignKey(FileWrapper, on_delete=models.CASCADE)
+    type = models.IntegerField()
+
+    @staticmethod
+    def needs_new_import(file):
+        if DataImport.objects.filter(path=file).exists():
+            return False
+        return True
+
+    @staticmethod
+    def last_modification_time(file):
+        return os.path.getctime(file)
+
+    @staticmethod
+    def needs_reimport(file):
+        try:
+            di = DataImport.objects.get(path=file)
+        except DataImport.DoesNotExist:
+            return True
+        print(file)
+        t = DataImport.last_modification_time(file)
+        d = di.last_change
+        print(t,d)
+        return t!=d
+
+    @staticmethod
+    def reimport(file, type):
+         di = DataImport.objects.get(path=file)
+         obj = di.object
+         if type == "source.txt":
+             obj.origsourcefile = file
+         elif type == "reference.txt":
+             obj.origreferencefile = file
+             obj.clear_evals()
+         elif type == "translation.txt":
+             obj.origtranslationfile = file
+             obj.clear_evals()
+         else:
+             raise ValueError("wrong type")
+         di.last_change = DataImport.last_modification_time(file)
+         di.save()
+         obj.is_checked = False
+         obj.save()
+
+
+
+

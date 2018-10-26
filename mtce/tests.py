@@ -119,3 +119,25 @@ class ComparisonCheckpointTests(TestCase):
         cp = Checkpoint(name="DFSDFS",mtsystem=mt,origtranslationfile=B)
         cp.save()
         self.assertIs(c.is_corrupted,False)
+
+class DataImportTests(TestCase):
+
+    def test_needs_import(self):
+        A = os.path.join(base,"test_a")
+        with open(A, "w") as f:
+            print("abc\nsdfd\n", file=f, end="")
+        c = Comparison(name="DFS",origsourcefile=A,origreferencefile=A)
+        c.save()
+        di = create_DataImport(A,"source.txt",c)
+        di.save()
+
+        self.assertIs(DataImport.needs_new_import(A),False)
+        self.assertIs(DataImport.needs_reimport(A),False)
+        self.assertIs(DataImport.needs_reimport(A),False)
+
+
+        with open(A, "w") as f:
+            print("abc\nsdfd\n", file=f, end="")
+        self.assertIs(DataImport.needs_reimport(A),True)
+
+
