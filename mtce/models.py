@@ -105,6 +105,10 @@ class Comparison(ModelBase, FileWrapper):
         if os.path.exists(self.base_dir()):
             shutil.rmtree(self.base_dir())
 
+    @staticmethod
+    def find_by_name(name):
+        return Comparison.objects.get(name=ModelBase.name_to_und(name))
+
 def create_MTSystem(name, comp):
     return MTSystem(name=ModelBase.name_to_und(name),comparison=comp)
 
@@ -125,6 +129,11 @@ class MTSystem(ModelBase, models.Model):
         shutil.rmtree(self.base_dir())
 
     is_imported = models.BooleanField(default=False)
+
+
+    @staticmethod
+    def find_by_name(name):
+        return MTSystem.objects.get(name=ModelBase.name_to_und(name))
 
 def create_Checkpoint(name,trans,sys):
     return Checkpoint(name=ModelBase.name_to_und(name),origtranslationfile=trans,mtsystem=sys)
@@ -164,6 +173,12 @@ class Checkpoint(ModelBase, FileWrapper):
     def delete_file_structure(self):
         if os.path.exists(self.base_dir()):
             shutil.rmtree(self.base_dir())
+
+    def get_translation(self):
+        with open(self.translationfile(),"r") as f:
+            return f.read()
+    def get_lines_count(self):
+        return self.count_number_of_lines(self.translationfile())
 
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
@@ -211,14 +226,14 @@ class DataImport(models.Model):
             di = DataImport.objects.get(path=file)
         except DataImport.DoesNotExist:
             return True
-        print(file)
         t = DataImport.last_modification_time(file)
         d = di.last_change
-        print(t,d)
+        #print(t,d)
         return t!=d
 
     @staticmethod
     def reimport(file, type):
+         print(file)
          di = DataImport.objects.get(path=file)
          obj = di.object
          if type == "source.txt":
