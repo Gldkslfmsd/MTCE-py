@@ -82,4 +82,3 @@ def importing_loop():
                 print("skipping %s, it is not a dir" % dir)
         print()
         time.sleep(2)
-        break
