@@ -15,7 +15,18 @@ class Command(BaseCommand):
         print(args)
         print(options)
 
-        importing_loop()
+        infinite=True
+
+        while True:
+            importing_loop_iteration()
+    #        deleting_loop()
+            evaluation_loop_iteration()
+            if not infinite:
+                break
+            print()
+            time.sleep(2)
+
+
 
 mtce.apps.update_file_structure = False
 base = os.path.join("files","comparisons")
@@ -27,7 +38,6 @@ def import_comparison(path):
     ref = os.path.join(path, "reference.txt")
     c = Comparison(name=name,origsourcefile=src,origreferencefile=ref)
     c.save()
-
 
     for dir in os.listdir(path):
         pdir = os.path.join(path, dir)
@@ -109,8 +119,7 @@ def check_checkpoint(path,sys=None,comp=None):
                 print("  needs reimport: False")
 
 
-def importing_loop(infinite=True):
-    while True:
+def importing_loop_iteration(infinite=True):
         print("importing loop iteration...")
         for _,comp_dirs,files in os.walk(base):
             for comp_dir_name in comp_dirs:
@@ -132,7 +141,27 @@ def importing_loop(infinite=True):
                     break
             break
 
+
+
+def deleting_loop(infinite=True):
+    # TODO -- go through the database and delete objects, whose files were deleted
+    while True:
+        pass
         if not infinite:
             break
         print()
         time.sleep(2)
+
+
+from multiprocessing import Pool
+
+pool = Pool(2)
+
+def evaluation_loop_iteration():
+    print("tady")
+    for job in EvalJob.waiting_jobs():
+        print(job)
+        job.schedule()
+        pool.apply_async(job.launch)
+
+

@@ -8,6 +8,13 @@ from django.core.exceptions import ValidationError
 
 from django.contrib.contenttypes.models import ContentType
 
+
+METRICS = [
+    ('BLEU','BLEU cased'),
+    ('BLEU unc','BLEU uncased'),
+    ('brev','brevity penalty'),
+]
+
 class ModelBase():
 
     def __str__(self):
@@ -89,6 +96,8 @@ class FileWrapper(ModelBase, models.Model):
             fn = self.sourcefile()
         elif type == "reference":
             fn = self.referencefile()
+        else:
+            raise ValueError
         if not beg:
             beg = 0
         if not end:
@@ -97,8 +106,7 @@ class FileWrapper(ModelBase, models.Model):
             lines = f.readlines()
         return lines[beg:end]
 
-    def list_source_reference(self, beg=None, end=None):
-        return list(zip(self.browse_sentences("source", beg=beg, end=end),self.browse_sentences("reference",beg=beg,end=end)))
+
 
 
 class Comparison(FileWrapper):
@@ -165,6 +173,9 @@ class Comparison(FileWrapper):
         di.save()
         # TODO: update dependent checkpoint evaluations
 
+    def list_source_reference(self, beg=None, end=None):
+        return list(zip(self.browse_sentences("source", beg=beg, end=end),self.browse_sentences("reference",beg=beg,end=end)))
+
 
 
 
@@ -204,6 +215,13 @@ class MTSystem(ModelBase, models.Model):
     @staticmethod
     def find_by_name(name):
         return MTSystem.objects.get(name=ModelBase.name_to_und(name))
+
+
+
+
+
+
+
 
 def create_Checkpoint(name,trans,sys):
     return Checkpoint(name=ModelBase.name_to_und(name),origtranslationfile=trans,mtsystem=sys)
@@ -260,7 +278,10 @@ class Checkpoint(FileWrapper):
         di = create_or_get_DataImport(tr,"translation.txt",self)
         di.set_correct_time()
         di.save()
-        # TODO: update checkpoint evaluations
+
+        for metric,_ in METRICS:
+            job = EvalJob.create_new(metric=metric,checkpoint=self)
+            job.save()
 
 
 
@@ -360,6 +381,67 @@ class DataImport(models.Model):
          di.save()
          obj.is_checked = False
          obj.save()
+
+
+
+
+class EvalBase(models.Model):
+    metric = models.CharField(default='BLEU',choices=METRICS,max_length=50)
+    checkpoint = models.ForeignKey(Checkpoint, on_delete=models.CASCADE)
+
+
+    def __str__(self):
+        return "%s+%s" % (self.checkpoint, self.metric)
+
+
+class Evaluation(EvalBase):
+    value = models.FloatField()
+    pass
+
+
+
+JOB_STATES=[("w","waiting"),("s","scheduled"),("r","running"),("f","finished"),("failed","failed")]
+
+import random
+import time
+
+class EvalJob(EvalBase):
+
+    state = models.CharField(default="waiting",choices=JOB_STATES,max_length=50)
+    priority = models.IntegerField(default=0)
+
+    @staticmethod
+    def create_new(metric,checkpoint):
+        return EvalJob(metric=metric,checkpoint=checkpoint)
+
+    @staticmethod
+    def waiting_jobs():
+        return EvalJob.objects.filter(state="waiting").all()
+
+    def schedule(self):
+        self.state = "scheduled"
+        self.save()
+
+    def launch(self):
+        print("launching job")
+        try:
+            result = random.random()
+            time.sleep(random.randint(1,3))
+        except:
+            pass  # TODO
+
+        e = Evaluation(metric=self.metric,checkpoint=self.checkpoint,value=result)
+        e.save()
+        self.state = "finished"
+        self.save()
+
+        print("job finished")
+
+
+
+
+
+
 
 
 

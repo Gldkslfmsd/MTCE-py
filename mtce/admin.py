@@ -25,6 +25,10 @@ class ComparisonAdmin(NestedModelAdmin):
 
 
 
+class EvalJobAdmin(admin.ModelAdmin):
+    list_display = ('checkpoint',"state","metric")
+#    inlines = [MTSystemTabularInline,] # CheckpointStackedInline]
+#    search_fields = ['name','description']
 
 
 
@@ -35,6 +39,7 @@ admin.site.register(Comparison, ComparisonAdmin)
 #admin.site.register(Checkpoint)
 
 admin.site.register(DataImport)
+admin.site.register(EvalJob, EvalJobAdmin)
 
 
 

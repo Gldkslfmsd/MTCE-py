@@ -187,7 +187,7 @@ class DataImportTests(TestCase):
 
     def test_imports(self):
         copytree("files/test/test_comparison","files/comparisons/test_comparison")
-        importing_loop(infinite=False)
+        importing_loop_iteration()
 
         cp = Checkpoint.objects.get(name='test_checkpoint')
         self.assertEqual(cp.name,'test_checkpoint')
@@ -198,7 +198,7 @@ class DataImportTests(TestCase):
 
 
         print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-        importing_loop(infinite=False)
+        importing_loop_iteration()
 
         cp = Checkpoint.objects.get(name='test_checkpoint')
         self.assertEqual(cp.name,'test_checkpoint')
@@ -211,8 +211,49 @@ class DataImportTests(TestCase):
             f.write("test source\n"*10)
         print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
         self.assertEquals(DataImport.needs_reimport(c.sourcefile()),True)
-        importing_loop(infinite=False)
+        importing_loop_iteration()
         self.assertEquals(DataImport.needs_reimport(c.sourcefile()),False)
+
+
+
+
+from .evaluators import BLEU, BLEU_subprocess
+import subprocess
+import os
+import sacrebleu
+
+class TestEvaluator(TestCase):
+
+    marian_wmt18 = "files/test/marian.wmt18.en-de"
+
+    @staticmethod
+    def prepare_marian_test():
+        '''downloads WMT18 en-de src and reference, and Marian's submission from matrix.statmt.org,
+         to files/test'''
+
+        import sacrebleu as scb
+        scb.download_test_set("wmt18","en-de")
+
+        marian_wmt18 = "http://matrix.statmt.org/data/20180522045237_U-1012_S-3525_T-1881_test2018.en.output.r2l.sgm?1526964802"
+        from urllib.request import urlopen
+        r = urlopen(marian_wmt18)
+        with open("files/test/marian.wmt18.en-de.sgm","w") as f:
+            f.write(r.read().decode("utf-8"))
+        sacrebleu.process_to_text("files/test/marian.wmt18.en-de.sgm","files/test/marian.wmt18.en-de")
+
+
+    def test_sacrebleu(self):
+
+        if not os.path.exists(self.marian_wmt18):
+            self.prepare_marian_test()
+
+        ref = os.path.join(os.path.expanduser("~"),".sacrebleu/wmt18/en-de.de")
+        tr = self.marian_wmt18
+        sb = BLEU_subprocess().eval(tr,ref)
+        b = round(BLEU().eval(tr,ref),2)
+        self.assertEquals(sb,b)
+
+
 
 
 
