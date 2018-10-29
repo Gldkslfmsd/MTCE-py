@@ -58,11 +58,14 @@ class FileWrapper(ModelBase, models.Model):
     is_checked = models.BooleanField(default=False)
 
     def clear_evals(self):
+        # TODO
         pass
 
     def update_data_import(self):
         raise NotImplementedError("override this")
 
+    # based on this:
+    # https://stackoverflow.com/questions/929029/how-do-i-access-the-child-classes-of-an-object-in-django-without-knowing-the-nam
     real_type = models.ForeignKey(ContentType, editable=False, on_delete=models.CASCADE)
 
     def save(self, *a, **kw):

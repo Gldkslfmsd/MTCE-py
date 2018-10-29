@@ -3,9 +3,13 @@
 
 {% block content %}
 <h1>Comparisons</h1>
-<table class="table table-bordered table-hover table-responsive">
-	<th>name</th>
-	<th>description</th>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>name</th>
+            <th>description</th>
+        </tr>
+    </thead>
 	<!-- <th>documents</th>
 	<th>total sentences</th>
 	!-->
@@ -13,9 +17,6 @@
 	<tr>
 		<td><a href="{% url 'mtce:comparison_detail' comp.id %}">{{ comp.name }}</a></td>
 		<td>{{ comp.description }}</td>
-	<!--	<td>{{ task.documents }}</td>
-		<td>{{ task.total_sentences }}</td>
-		!-->
 	</tr>
 	{% endfor %}
 </table>
