@@ -27,10 +27,7 @@ def import_comparison(path):
     ref = os.path.join(path, "reference.txt")
     c = Comparison(name=name,origsourcefile=src,origreferencefile=ref)
     c.save()
-    di = create_DataImport(src,"source.txt",c)
-    di.save()
-    di = create_DataImport(ref,"reference.txt",c)
-    di.save()
+
 
     for dir in os.listdir(path):
         pdir = os.path.join(path, dir)
@@ -46,9 +43,9 @@ def import_comparison(path):
                         print("     creating MTSystem",sys)
                     cp = create_Checkpoint(cdir,trans,sys)
                     cp.save()
-                    di = create_DataImport(trans,'translation.txt',cp)
-                    print("     creating Checkpoint",cp)
-                    di.save()
+#                    di = create_DataImport(trans,'translation.txt',cp)
+#                    print("     creating Checkpoint",cp)
+#                    di.save()
         else:
             if dir not in ("source.txt","reference.txt"):
                 print("ignoring extra file ",path,dir)
@@ -90,8 +87,8 @@ def import_checkpoint(path,sys,comp):
     t_full = os.path.join(path,"translation.txt")
     cp = create_Checkpoint(cname, t_full,s)
     cp.save()
-    di = create_DataImport(t_full,"translation.txt",cp)
-    di.save()
+#    di = create_DataImport(t_full,"translation.txt",cp)
+#    di.save()
 
 
 def check_checkpoint(path,sys=None,comp=None):

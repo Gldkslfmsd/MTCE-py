@@ -47,7 +47,7 @@
   </thead>
   <tbody>
   {% for sys,cp in systems_checkpoints %}
-    <tr class="table-{% if forloop.counter|divisibleby:2 %}dark{% else %}light{% endif %}">
+    <tr class="table-light">
         <th scope="row"><a href="{% url 'mtce:system_detail' sys.id %}">{{ sys }}</a></th>
       <td>{{ cp }}</td>
       <td>NA</td>

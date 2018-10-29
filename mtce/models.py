@@ -4,7 +4,9 @@ import os
 import shutil
 # Create your models here.
 
+from django.core.exceptions import ValidationError
 
+from django.contrib.contenttypes.models import ContentType
 
 class ModelBase():
 
@@ -47,7 +49,9 @@ class ModelBase():
         return True
 
 
-class FileWrapper(models.Model):
+class FileWrapper(ModelBase, models.Model):
+
+    name = models.CharField(max_length=200)
 
     is_imported = models.BooleanField(default=False)
     is_corrupted = models.BooleanField(default=False)
@@ -56,9 +60,27 @@ class FileWrapper(models.Model):
     def clear_evals(self):
         pass
 
-class Comparison(ModelBase, FileWrapper):
+    def update_data_import(self):
+        raise NotImplementedError("override this")
 
-    name = models.CharField(max_length=200)
+    real_type = models.ForeignKey(ContentType, editable=False, on_delete=models.CASCADE)
+
+    def save(self, *a, **kw):
+        if self._state.adding:
+            self.real_type = self._get_real_type()
+        super().save(*a,**kw)
+        self.cast().update_data_import()
+
+    def _get_real_type(self):
+        return ContentType.objects.get_for_model(type(self))
+
+    def cast(self):
+        return self.real_type.get_object_for_this_type(pk=self.pk)
+
+
+
+
+class Comparison(FileWrapper):
 
     origsourcefile = models.FileField(
         upload_to=ModelBase.upload_to_tmp,
@@ -109,11 +131,37 @@ class Comparison(ModelBase, FileWrapper):
     def find_by_name(name):
         return Comparison.objects.get(name=ModelBase.name_to_und(name))
 
+
+
+    def update_data_import(self):
+        src = self.sourcefile()
+        ref = self.referencefile()
+        di = create_or_get_DataImport(src,"source.txt",self)
+        di.set_correct_time()
+        di.save()
+        di = create_or_get_DataImport(ref,"reference.txt",self)
+        di.set_correct_time()
+        di.save()
+        # TODO: update dependent checkpoint evaluations
+
+
+
+
+
+
+
 def create_MTSystem(name, comp):
     return MTSystem(name=ModelBase.name_to_und(name),comparison=comp)
 
 class MTSystem(ModelBase, models.Model):
     name = models.CharField(max_length=200)
+
+    def clean_fields(self,*a,**kw):
+#        print([s.name for s in self.comparison.mtsystem_set.all()])
+        if self.name in [s.name for s in self.comparison.mtsystem_set.all() if s!=self]:
+            raise ValidationError('MTSystem name already used.')
+
+
     comparison = models.ForeignKey(Comparison, on_delete=models.CASCADE)
 
     description = models.TextField(max_length=5000, default="", blank=True, help_text="Optional MTSystem description")
@@ -126,7 +174,8 @@ class MTSystem(ModelBase, models.Model):
         return basename
 
     def delete_file_structure(self):
-        shutil.rmtree(self.base_dir())
+        if os.path.exists(self.base_dir()):
+            shutil.rmtree(self.base_dir())
 
     is_imported = models.BooleanField(default=False)
 
@@ -138,8 +187,12 @@ class MTSystem(ModelBase, models.Model):
 def create_Checkpoint(name,trans,sys):
     return Checkpoint(name=ModelBase.name_to_und(name),origtranslationfile=trans,mtsystem=sys)
 
-class Checkpoint(ModelBase, FileWrapper):
-    name = models.CharField(max_length=200)
+class Checkpoint(FileWrapper):
+
+    def clean_fields(self,*a,**kw):
+        if self.name in set(s.name for s in self.mtsystem.checkpoint_set.all() if s!=self):
+            raise ValidationError('Checkpoint name already used.')
+
     mtsystem = models.ForeignKey(MTSystem, on_delete=models.CASCADE)
 
     step = models.IntegerField(default=-1, help_text="MT system trainings steps of this checkpoint. Optional.")
@@ -180,35 +233,71 @@ class Checkpoint(ModelBase, FileWrapper):
     def get_lines_count(self):
         return self.count_number_of_lines(self.translationfile())
 
+
+    def update_data_import(self):
+        tr = self.translationfile()
+        di = create_or_get_DataImport(tr,"translation.txt",self)
+        di.set_correct_time()
+        di.save()
+        # TODO: update checkpoint evaluations
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################################################################x
+# Data imports
+
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
-@receiver(post_save, sender=Comparison)
-@receiver(post_save, sender=Checkpoint)
+@receiver(post_save, sender=Comparison, weak=False)
+@receiver(post_save, sender=Checkpoint, weak=False)
 def post_save_receiver(senderclass=None, signal=None, instance=None, created=False, update_fields=None, raw=False, using='default', **kwargs):
     instance.update_file_structure()
+   # print("post save receiver")
+   # print(instance,created,update_fields,"raw",raw)
+   # print()
+    #instance.update_data_import(created,update_fields)
 
 
-@receiver(pre_delete, sender=Comparison)
-@receiver(pre_delete, sender=Checkpoint)
+@receiver(pre_delete, sender=Comparison, weak=False)
+@receiver(pre_delete, sender=Checkpoint, weak=False)
 @receiver(pre_delete, sender=MTSystem)
 def pre_delete_receiver(senderclass=None, signal=None, instance=None, created=False, update_fields=None, raw=False, using='default', **kwargs):
     instance.delete_file_structure()
 
 ##################
 
-import time
 
 type_dict = { 'source.txt':1, 'reference.txt': 2, 'translation.txt':3 }
 
 def create_DataImport(file, type, obj):
     return DataImport(path=file,type=type_dict[type],object=obj,last_change=DataImport.last_modification_time(file))
 
+def create_or_get_DataImport(file, type, obj):
+    if DataImport.objects.filter(path=file,type=type_dict[type],object=obj).exists():
+        return DataImport.objects.filter(path=file,type=type_dict[type],object=obj).first()
+    return create_DataImport(file, type, obj)
+
 class DataImport(models.Model):
     last_change = models.FloatField()
     path = models.CharField(max_length=1024)
     object = models.ForeignKey(FileWrapper, on_delete=models.CASCADE)
     type = models.IntegerField()
+
+    def set_correct_time(self):
+        self.last_change = DataImport.last_modification_time(self.path)
 
     @staticmethod
     def needs_new_import(file):
