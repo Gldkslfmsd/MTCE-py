@@ -81,6 +81,24 @@ class FileWrapper(ModelBase, models.Model):
         return self.real_type.get_object_for_this_type(pk=self.pk)
 
 
+    ############
+    def browse_sentences(self, type, beg=None, end=None):
+        if type == "translation":
+            fn = self.translationfile()
+        elif type == "source":
+            fn = self.sourcefile()
+        elif type == "reference":
+            fn = self.referencefile()
+        if not beg:
+            beg = 0
+        if not end:
+            end = -1
+        with open(fn, "r") as f:
+            lines = f.readlines()
+        return lines[beg:end]
+
+    def list_source_reference(self, beg=None, end=None):
+        return list(zip(self.browse_sentences("source", beg=beg, end=end),self.browse_sentences("reference",beg=beg,end=end)))
 
 
 class Comparison(FileWrapper):

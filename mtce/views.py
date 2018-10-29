@@ -50,12 +50,14 @@ def comparison_detail(request, comparison_id):
     comp = get_object_or_404(Comparison, pk=comparison_id)
 
     systems_checkpoints = comp.systems_checkpoints()
+    list_source_reference = comp.list_source_reference(beg=0,end=100)
     return render(request,
                   'mtce/comparison_detail.html',
                   {'comparison': comp,
                    'comparisons': get_comparisons(),
                    'active': 'comp',
                    'systems_checkpoints': systems_checkpoints,
+                   'list_source_reference': list_source_reference,
                    }
                   )
 
