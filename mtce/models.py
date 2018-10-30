@@ -9,11 +9,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
 
 
-METRICS = [
-    ('BLEU','BLEU cased'),
-    ('BLEU unc','BLEU uncased'),
-    ('brev','brevity penalty'),
-]
+
 
 class ModelBase():
 
@@ -248,11 +244,19 @@ class Checkpoint(FileWrapper):
         return self.mtsystem.comparison
 
     def base_dir(self):
+        print(self)
+        print("TTT,",self.mtsystem)
         basename = os.path.join(self.mtsystem.base_dir(), self.name_to_und(self.name))#+"__%d" % self.id)
         return basename
 
     def translationfile(self):
         return os.path.join(self.base_dir(), "translation.txt")
+
+    def translation(self):
+        return self.translationfile()
+
+    def reference(self):
+        return self.comparison().referencefile()
 
     def update_file_structure(self):
         if self.is_checked: return
@@ -279,9 +283,10 @@ class Checkpoint(FileWrapper):
         di.set_correct_time()
         di.save()
 
-        for metric,_ in METRICS:
-            job = EvalJob.create_new(metric=metric,checkpoint=self)
-            job.save()
+        if not EvalJob.objects.filter(checkpoint=self).exists():
+            for metrics in EVALUATORS.keys():
+                job = EvalJob.create_new(metric=metrics,checkpoint=self)
+                job.save()
 
 
 
@@ -386,17 +391,21 @@ class DataImport(models.Model):
 
 
 class EvalBase(models.Model):
-    metric = models.CharField(default='BLEU',choices=METRICS,max_length=50)
+    metric = models.CharField(max_length=50)
     checkpoint = models.ForeignKey(Checkpoint, on_delete=models.CASCADE)
 
 
     def __str__(self):
-        return "%s+%s" % (self.checkpoint, self.metric)
+        return "%s:%s" % (self.checkpoint, self.metric)
 
 
 class Evaluation(EvalBase):
     value = models.FloatField()
-    pass
+
+    def __str__(self):
+        return "%s:%s=%2.2f" % (self.checkpoint, self.metric, self.value)
+
+
 
 
 
@@ -404,11 +413,15 @@ JOB_STATES=[("w","waiting"),("s","scheduled"),("r","running"),("f","finished"),(
 
 import random
 import time
+from .evaluators import EVALUATORS
 
 class EvalJob(EvalBase):
 
-    state = models.CharField(default="waiting",choices=JOB_STATES,max_length=50)
+    state = models.CharField(default="waiting",max_length=50)
     priority = models.IntegerField(default=0)
+
+    def __str__(self):
+        return "%s:%s,state=%s" % (self.checkpoint, self.metric, self.state)
 
     @staticmethod
     def create_new(metric,checkpoint):
@@ -423,19 +436,22 @@ class EvalJob(EvalBase):
         self.save()
 
     def launch(self):
-        print("launching job")
+        print("##launching job %s" % self.metric)
         try:
-            result = random.random()
-            time.sleep(random.randint(1,3))
-        except:
-            pass  # TODO
-
-        e = Evaluation(metric=self.metric,checkpoint=self.checkpoint,value=result)
-        e.save()
+           results = EVALUATORS[self.metric].eval(self.checkpoint.translation(),self.checkpoint.reference())
+        except Exception as e:
+            print("exception:")
+            print(e)
+            raise
+#            pass  # TODO
+        for m,r in zip(self.metri.split(), results):
+            e = Evaluation(metric=m,checkpoint=self.checkpoint,value=r)
+            e.save()
         self.state = "finished"
         self.save()
 
-        print("job finished")
+        print("##job finished",self.metric)
+        self.delete()
 
 
 

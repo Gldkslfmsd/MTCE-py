@@ -18,13 +18,13 @@ class Command(BaseCommand):
         infinite=True
 
         while True:
-            importing_loop_iteration()
+            #importing_loop_iteration()
     #        deleting_loop()
-            evaluation_loop_iteration()
+            evaluation_scheduler_iteration()
             if not infinite:
                 break
             print()
-            time.sleep(2)
+            time.sleep(20)
 
 
 
@@ -157,11 +157,12 @@ from multiprocessing import Pool
 
 pool = Pool(2)
 
-def evaluation_loop_iteration():
+def evaluation_scheduler_iteration():
     print("tady")
     for job in EvalJob.waiting_jobs():
         print(job)
         job.schedule()
-        pool.apply_async(job.launch)
+#        pool.apply_async(job.launch)
+        pool.apply(job.launch)
 
 

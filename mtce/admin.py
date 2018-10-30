@@ -31,6 +31,8 @@ class EvalJobAdmin(admin.ModelAdmin):
 #    search_fields = ['name','description']
 
 
+class EvalAdmin(admin.ModelAdmin):
+    list_display = ('checkpoint',"metric","value")
 
 
 admin.site.register(Comparison, ComparisonAdmin)
@@ -40,6 +42,7 @@ admin.site.register(Comparison, ComparisonAdmin)
 
 admin.site.register(DataImport)
 admin.site.register(EvalJob, EvalJobAdmin)
+admin.site.register(Evaluation, EvalAdmin)
 
 
 

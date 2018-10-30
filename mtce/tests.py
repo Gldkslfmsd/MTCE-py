@@ -1,5 +1,5 @@
 from django.test import TestCase
-
+from django import db
 # Create your tests here.
 
 from .models import *
@@ -225,6 +225,8 @@ import sacrebleu
 class TestEvaluator(TestCase):
 
     marian_wmt18 = "files/test/marian.wmt18.en-de"
+    reference_wmt18 = os.path.join(os.path.expanduser("~"),".sacrebleu/wmt18/en-de.de")
+    source_wmt18 = os.path.join(os.path.expanduser("~"),".sacrebleu/wmt18/en-de.en")
 
     @staticmethod
     def prepare_marian_test():
@@ -242,16 +244,47 @@ class TestEvaluator(TestCase):
         sacrebleu.process_to_text("files/test/marian.wmt18.en-de.sgm","files/test/marian.wmt18.en-de")
 
 
-    def test_sacrebleu(self):
+    def test_sacrebleu_calls(self):
+        """BLEU computed as with a script versus library is the same now"""
 
         if not os.path.exists(self.marian_wmt18):
             self.prepare_marian_test()
 
-        ref = os.path.join(os.path.expanduser("~"),".sacrebleu/wmt18/en-de.de")
+        ref = self.reference_wmt18
         tr = self.marian_wmt18
         sb = BLEU_subprocess().eval(tr,ref)
         b = round(BLEU().eval(tr,ref),2)
         self.assertEquals(sb,b)
+
+    def test_evaluation(self):
+        c = Comparison(name="en-de WMT18",origsourcefile=self.source_wmt18,origreferencefile=self.reference_wmt18)
+        c.save()
+        s = MTSystem(name="marian",comparison=c)
+        s.save()
+        mts = MTSystem.objects.get(name="marian")
+        self.assertEqual(s,mts)
+        ch = create_Checkpoint("checkpoint-1",self.marian_wmt18,mts)
+        ch.save()
+
+        print("######")
+        for c in Comparison.objects.all():
+            print(c)
+        for s in MTSystem.objects.all():
+            print(s,s.checkpoint_set.all())
+        for ch in Checkpoint.objects.all():
+            print(ch,ch.mtsystem)
+        print("######")
+        db.connections.close_all()
+        evaluation_scheduler_iteration()
+
+        time.sleep(20)
+        print("-------------------- all jobs:")
+        for s in EvalJob.objects.all():
+            print(s)
+        print("----")
+
+
+
 
 
 
