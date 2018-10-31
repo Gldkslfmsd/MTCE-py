@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
 
 
-
+from .evaluators import metric_NA
 
 class ModelBase():
 
@@ -296,6 +296,13 @@ class Checkpoint(FileWrapper):
         di.save()
 
         self.schedule_evaluation()
+
+    def get_metric_value(self,metric):
+        e = Evaluation.objects.filter(metric=metric,checkpoint=self).first()
+        if e is None:
+            return metric_NA[metric]
+        return e.value
+
 
 
 

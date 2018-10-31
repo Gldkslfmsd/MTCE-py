@@ -42,17 +42,21 @@
   <thead>
     <tr>
       <th scope="col">Checkpoint</th>
-      <th scope="col">BLEU</th>
+        {% for m in metrics %}
+      <th scope="col">{{ m }}</th>
+        {% endfor %}
     </tr>
   </thead>
   <tbody>
-  {% for cp in checkpoints %}
- <!--     <tr class="table-{% if forloop.counter|divisibleby:2 %}dark{% else %}light{% endif %}">
- !-->
+
+  {% for cp,metricvalues in checkpoints_metricvalues %}
+
            <tr class="table-light">
 <!--      <th scope="row">{{ sys }}</th> !-->
       <td>{{ cp }}</td>
-      <td>NA</td>
+   {% for mv in metricvalues %}
+       <td>{{ mv }}</td>
+   {% endfor %}
     </tr>
   {% endfor %}
   </tbody>

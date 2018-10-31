@@ -46,3 +46,13 @@ EVALUATORS = {
     "BLEU_lowercased": BLEU_lc(),
     "BLEU brevity_penalty": SacreBleu(),
 }
+
+
+METRICS = ["BLEU",
+           "brevity_penalty",
+           "BLEU_lowercased",
+           ]
+
+from collections import defaultdict
+metric_NA = defaultdict(lambda: float("nan"))
+metric_NA["BLEU"] = -1

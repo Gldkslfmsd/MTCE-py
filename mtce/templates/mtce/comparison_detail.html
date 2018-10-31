@@ -42,15 +42,19 @@
     <tr>
       <th scope="col">MT System</th>
       <th scope="col">Checkpoint</th>
-      <th scope="col">BLEU</th>
+        {% for metric in metrics %}
+          <th scope="col">{{ metric }}</th>
+        {% endfor %}
     </tr>
   </thead>
   <tbody>
-  {% for sys,cp in systems_checkpoints %}
+  {% for sys,cp,metricvalues in systems_checkpoints_metricvalues %}
     <tr class="table-light">
         <th scope="row"><a href="{% url 'mtce:system_detail' sys.id %}">{{ sys }}</a></th>
       <td>{{ cp }}</td>
-      <td>NA</td>
+        {% for mv in metricvalues %}
+          <td>{{ mv }}</td>
+        {% endfor %}
     </tr>
   {% endfor %}
   </tbody>
