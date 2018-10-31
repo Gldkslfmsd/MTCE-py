@@ -3,9 +3,6 @@
 import sacrebleu
 import subprocess
 
-
-
-
 class Evaluation:
     def eval(self,translation,reference):
         raise NotImplementedError()
@@ -21,14 +18,14 @@ class BLEU(Evaluation):
         with open(ref,"r") as ref:
             r = ref.readlines()
         bleu = sacrebleu.corpus_bleu(t,[r], lowercase=self.LOWERCASE)
-        return bleu.score
+        return (bleu.score,)
 
 
 class BLEU_subprocess(Evaluation):
 
     def eval(self,trans,ref):
         output = subprocess.check_output(["sacrebleu",ref,"-i",trans,"-b"]).decode('utf-8')
-        return float(output)
+        return (float(output),)
 
 class BLEU_lc(BLEU):
     LOWERCASE = True
@@ -42,7 +39,7 @@ class SacreBleu(BLEU):
         with open(ref,"r") as ref:
             r = ref.readlines()
         bleu = sacrebleu.corpus_bleu(t,[r], lowercase=self.LOWERCASE)
-        return bleu.score, bleu.pb
+        return bleu.score, bleu.bp
 
 EVALUATORS = {
 #    "BLEU": BLEU(),

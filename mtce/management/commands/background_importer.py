@@ -1,34 +1,42 @@
 from django.core.management.base import BaseCommand
 
 from mtce.models import *
-import mtce.apps
 
 import time
 import os
 import shutil
+import multiprocessing
 
 class Command(BaseCommand):
 
     help = "Whatever you want to print here"
 
+    def add_arguments(self, parser):
+        parser.add_argument('--workers', type=int, default=multiprocessing.cpu_count(),
+                            help="Maximum number of worker processes for evaluation. "
+                            "Default: current number of CPUs.")
+
+
     def handle(self, *args, **options):
         print(args)
         print(options)
 
+        workers = options['workers']
+
         infinite=True
 
+        em = EvaluationManager(workers=workers)
         while True:
-            #importing_loop_iteration()
+            importing_loop_iteration()
     #        deleting_loop()
-            evaluation_scheduler_iteration()
+            em.evaluation_manager_iteration()
             if not infinite:
                 break
             print()
-            time.sleep(20)
+            time.sleep(2)
 
 
 
-mtce.apps.update_file_structure = False
 base = os.path.join("files","comparisons")
 
 def import_comparison(path):
@@ -152,17 +160,33 @@ def deleting_loop(infinite=True):
         print()
         time.sleep(2)
 
+import subprocess
 
-from multiprocessing import Pool
+class EvaluationManager:
 
-pool = Pool(2)
+    def __init__(self, workers):
+        self.running_workers = []
+        self.max_workers = workers
 
-def evaluation_scheduler_iteration():
-    print("tady")
-    for job in EvalJob.waiting_jobs():
-        print(job)
-        job.schedule()
-#        pool.apply_async(job.launch)
-        pool.apply(job.launch)
 
+    def evaluation_manager_iteration(self):
+        print("evaluation manager iteration...")
+        waiting_jobs = EvalJob.waiting_jobs().count()
+#        print("waiting jobs:!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n",waiting_jobs)
+        actualy_running_workers = []
+        workers_to_start = min(self.max_workers,waiting_jobs)
+        print(self.running_workers)
+        for w in self.running_workers:
+            print(w,w.poll())
+            if w.poll() is not None:
+                actualy_running_workers.append(w)
+                workers_to_start -= 1
+            # TODO: check, if the returncode is 0 or fail
+        self.running_workers = actualy_running_workers
+
+        workers_to_start = max(0,workers_to_start)
+        print("going to start %d workers" % workers_to_start)
+        for i in range(workers_to_start):
+            subpr = subprocess.Popen("./manage.py evaluation_worker -v 3".split(),env=os.environ)
+            self.running_workers.append(subpr)
 

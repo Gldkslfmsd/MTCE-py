@@ -273,9 +273,19 @@ class TestEvaluator(TestCase):
             print(s,s.checkpoint_set.all())
         for ch in Checkpoint.objects.all():
             print(ch,ch.mtsystem)
-        print("######")
-        db.connections.close_all()
-        evaluation_scheduler_iteration()
+        print("###### EvalJobs:")
+        for ej in EvalJob.objects.all():
+            print(ej)
+        print("#########")
+        j = EvalJob.acquire_job_or_none()
+        self.assertIsNotNone(j)
+        print("###### EvalJobs:")
+        for ej in EvalJob.objects.all():
+            print(ej)
+        print("#########")
+
+        em = EvaluationManager(1)
+        em.evaluation_manager_iteration()
 
         time.sleep(20)
         print("-------------------- all jobs:")

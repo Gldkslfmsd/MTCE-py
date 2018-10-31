@@ -167,7 +167,16 @@ class Comparison(FileWrapper):
         di = create_or_get_DataImport(ref,"reference.txt",self)
         di.set_correct_time()
         di.save()
-        # TODO: update dependent checkpoint evaluations
+
+        for e in Evaluation.objects.filter(reference_dataimport=di):
+            e.delete()
+        for _,ch in self.systems_checkpoints():
+            print("comparison: scheduling evaluation for ",ch)
+            ch.schedule_evaluation()
+
+
+
+
 
     def list_source_reference(self, beg=None, end=None):
         return list(zip(self.browse_sentences("source", beg=beg, end=end),self.browse_sentences("reference",beg=beg,end=end)))
@@ -244,8 +253,6 @@ class Checkpoint(FileWrapper):
         return self.mtsystem.comparison
 
     def base_dir(self):
-        print(self)
-        print("TTT,",self.mtsystem)
         basename = os.path.join(self.mtsystem.base_dir(), self.name_to_und(self.name))#+"__%d" % self.id)
         return basename
 
@@ -276,6 +283,11 @@ class Checkpoint(FileWrapper):
     def get_lines_count(self):
         return self.count_number_of_lines(self.translationfile())
 
+    def schedule_evaluation(self):
+        if not EvalJob.objects.filter(checkpoint=self).exclude(state="stopped").exists():
+            for metrics in EVALUATORS.keys():
+                job = EvalJob.create_new(metric=metrics,checkpoint=self)
+                job.save()
 
     def update_data_import(self):
         tr = self.translationfile()
@@ -283,10 +295,9 @@ class Checkpoint(FileWrapper):
         di.set_correct_time()
         di.save()
 
-        if not EvalJob.objects.filter(checkpoint=self).exists():
-            for metrics in EVALUATORS.keys():
-                job = EvalJob.create_new(metric=metrics,checkpoint=self)
-                job.save()
+        self.schedule_evaluation()
+
+
 
 
 
@@ -369,23 +380,36 @@ class DataImport(models.Model):
 
     @staticmethod
     def reimport(file, type):
-         print(file)
-         di = DataImport.objects.get(path=file)
-         obj = di.object
-         if type == "source.txt":
-             obj.origsourcefile = file
-         elif type == "reference.txt":
-             obj.origreferencefile = file
-             obj.clear_evals()
-         elif type == "translation.txt":
-             obj.origtranslationfile = file
-             obj.clear_evals()
-         else:
-             raise ValueError("wrong type")
-         di.last_change = DataImport.last_modification_time(file)
-         di.save()
-         obj.is_checked = False
-         obj.save()
+        print(file)
+        di = DataImport.objects.get(path=file)
+        obj = di.object
+        if type == "source.txt":
+            obj.origsourcefile = file
+        elif type == "reference.txt":
+            obj.origreferencefile = file
+            obj.clear_evals()
+        elif type == "translation.txt":
+            obj.origtranslationfile = file
+            obj.clear_evals()
+        else:
+            raise ValueError("wrong type")
+        di.last_change = DataImport.last_modification_time(file)
+        di.save()
+        obj.is_checked = False
+        obj.save()
+#
+#        for e in Evaluation.objects.filter(checkpoint_dataimport=di):
+#            e.delete()
+#        for e in Evaluation.objects.filter(reference_dataimport=di):
+#            e.delete()
+#        for ej in list(EvalJob.objects.filter(checkpoint_dataimport=di))+list(EvalJob.objects.filter(reference_dataimport=di)):
+#            if ej.state == "running":
+#                ej.state = "stopped"
+#            else:
+#                ej.delete()
+
+
+
 
 
 
@@ -393,7 +417,8 @@ class DataImport(models.Model):
 class EvalBase(models.Model):
     metric = models.CharField(max_length=50)
     checkpoint = models.ForeignKey(Checkpoint, on_delete=models.CASCADE)
-
+    checkpoint_dataimport = models.ForeignKey(DataImport, on_delete=models.CASCADE, related_name="+")
+    reference_dataimport = models.ForeignKey(DataImport, on_delete=models.CASCADE)
 
     def __str__(self):
         return "%s:%s" % (self.checkpoint, self.metric)
@@ -409,7 +434,7 @@ class Evaluation(EvalBase):
 
 
 
-JOB_STATES=[("w","waiting"),("s","scheduled"),("r","running"),("f","finished"),("failed","failed")]
+JOB_STATES=[("w","waiting"),("s","scheduled"),("r","running"),("st","stopped"),("f","finished"),("failed","failed")]
 
 import random
 import time
@@ -425,7 +450,9 @@ class EvalJob(EvalBase):
 
     @staticmethod
     def create_new(metric,checkpoint):
-        return EvalJob(metric=metric,checkpoint=checkpoint)
+        cdi = DataImport.objects.get(object=checkpoint.mtsystem.comparison,type=type_dict["reference.txt"])
+        chdi = DataImport.objects.get(object=checkpoint)
+        return EvalJob(metric=metric,checkpoint=checkpoint,reference_dataimport=cdi,checkpoint_dataimport=chdi)
 
     @staticmethod
     def waiting_jobs():
@@ -436,22 +463,31 @@ class EvalJob(EvalBase):
         self.save()
 
     def launch(self):
-        print("##launching job %s" % self.metric)
-        try:
-           results = EVALUATORS[self.metric].eval(self.checkpoint.translation(),self.checkpoint.reference())
-        except Exception as e:
-            print("exception:")
-            print(e)
-            raise
-#            pass  # TODO
-        for m,r in zip(self.metri.split(), results):
-            e = Evaluation(metric=m,checkpoint=self.checkpoint,value=r)
-            e.save()
-        self.state = "finished"
+        self.state = "running"
         self.save()
-
-        print("##job finished",self.metric)
+        print("##launching job %s" % self.metric)
+        results = EVALUATORS[self.metric].eval(self.checkpoint.translation(),self.checkpoint.reference())
+        if self.state == "running":
+            for m,r in zip(self.metric.split(), results):
+                e = Evaluation(metric=m, checkpoint=self.checkpoint, value=r,
+                               checkpoint_dataimport=self.checkpoint_dataimport,
+                               reference_dataimport=self.reference_dataimport)
+                e.save()
+            self.state = "finished"
+            self.save()
+            print("##job finished",self.metric)
+        else:
+            print("##job was stopped")
         self.delete()
+
+    @staticmethod
+    def acquire_job_or_none():
+        job = EvalJob.objects.select_for_update(nowait=True).filter(state="waiting").first()
+        #print("EvalJob acquiring job!!!!",job)
+        if job is not None:
+            job.state = "scheduled"
+            job.save()
+        return job
 
 
 
