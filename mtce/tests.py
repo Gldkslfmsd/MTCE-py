@@ -221,6 +221,9 @@ from .evaluators import BLEU, BLEU_subprocess
 import subprocess
 import os
 import sacrebleu
+from django.conf import settings
+
+#from django_concurrent_tests.helpers import call_concurrently
 
 class TestEvaluator(TestCase):
 
@@ -288,10 +291,33 @@ class TestEvaluator(TestCase):
         em.evaluation_manager_iteration()
 
         time.sleep(20)
-        print("-------------------- all jobs:")
+        print("-------------------- all jobs:", settings.DATABASES)
         for s in EvalJob.objects.all():
             print(s)
         print("----")
+
+
+
+    def test_concurrent_db_access(self):
+
+        def racey_function(arg):
+            print("abc")
+            return "SDFSFDSFS"
+            c = Comparison(name="concurrent_test%d" % arg,origsourcefile=self.source_wmt18,origreferencefile=self.reference_wmt18)
+            c.save()
+            return True
+
+        def is_success(result):
+            return result is True and not isinstance(result, Exception)
+
+
+        results = call_concurrently(1, racey_function, first_arg=1)
+        time.sleep(1)
+        print(results)
+        # results contains the return value from each call
+        successes = list(filter(is_success, results))
+
+
 
 
 

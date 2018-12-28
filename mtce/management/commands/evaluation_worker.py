@@ -10,9 +10,9 @@ import sys
 # TODO: one day we should start using logging correctly...
 #import logging
 
-def info(msg):
+def info(msg, *a):
 #    logging.debug("Evaluation worker %d: %s" % (PID,msg))
-    print("Evaluation worker %d: %s" % (PID,msg))
+    print("Evaluation worker %d: %s" % (PID,msg), *a)
 
 
 class Command(BaseCommand):

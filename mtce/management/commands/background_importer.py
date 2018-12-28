@@ -186,7 +186,10 @@ class EvaluationManager:
 
         workers_to_start = max(0,workers_to_start)
         print("going to start %d workers" % workers_to_start)
+        env = os.environ
+#        env['DJANGO_SETTINGS_MODULE'] = "mtcepy_site.testsettings"
+
         for i in range(workers_to_start):
-            subpr = subprocess.Popen("./manage.py evaluation_worker -v 3".split(),env=os.environ)
+            subpr = subprocess.Popen("./manage.py evaluation_worker -v 3 --settings mtcepy_site.testsettings".split(),env=env)
             self.running_workers.append(subpr)
 
