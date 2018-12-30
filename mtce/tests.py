@@ -265,17 +265,19 @@ class TestEvaluator(TestCase):
         b = round(BLEU().eval(tr,ref)[0],2)
         self.assertEquals(sb,b)
 
-#    def test_evaluation(self):
-#        c = Comparison(name="en-de WMT18",origsourcefile=self.source_wmt18,origreferencefile=self.reference_wmt18)
-#        c.save()
-#        s = MTSystem(name="marian",comparison=c)
-#        s.save()
-#        mts = MTSystem.objects.filter(name="marian").last()
-#        self.assertEqual(s,mts)
-#        ch = create_Checkpoint("checkpoint-1",self.marian_wmt18,mts)
-#        ch.save()
-#
-#        print("######")
+    def test_evaluation(self):
+        c = Comparison(name="en-de WMT18",origsourcefile=self.source_wmt18,origreferencefile=self.reference_wmt18)
+        c.save()
+        s = MTSystem(name="marian",comparison=c)
+        s.save()
+        mts = MTSystem.objects.filter(name="marian").last()
+        self.assertEqual(s,mts)
+        ch = create_Checkpoint("checkpoint-1",self.marian_wmt18,mts)
+        ch.save()
+        ch = create_Checkpoint("checkpoint-2",self.marian_wmt18,mts)
+        ch.save()
+
+#       print("######")
 #        for c in Comparison.objects.all():
 #            print(c)
 #        for s in MTSystem.objects.all():
@@ -340,8 +342,8 @@ class TestBootstrapMasks(TestCase):
         A = os.path.join(base,"test_a")
         with open(A, "w") as f:
             print("abc sdfsdfs\n"*1000, file=f,end="")
-        m1 = list(get_mask(A,10))
-        m2 = list(get_mask(A,10))
+        m1 = list(get_mask(1000,10))
+        m2 = list(get_mask(1000,10))
 
         self.assertListEqual(m1,m2)
         generated_mask = [722, 9, 242, 519, 138, 735, 83, 907, 352, 438, 372, 751, 130, 788, 407, 760, 853, 391, 318, 81, 617, 298, 225, 612, 28, 691, 461, 116, 103, 640, 743, 719, 447, 854, 672, 31, 476, 718, 931, 203, 192, 131, 608, 35, 561, 240, 738, 700, 356, 239, 533, 732, 42, 858, 485, 664, 77, 264, 452, 119, 772, 323, 406, 701, 147, 583, 281, 891, 715, 199, 987, 754, 259, 977, 0, 979, 359, 207, 850, 162, 820, 560, 793, 371, 256, 18, 821, 65, 822, 155, 357, 308, 157, 504, 596, 63, 15, 906, 73, 495]

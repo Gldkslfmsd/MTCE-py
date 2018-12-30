@@ -34,13 +34,18 @@ class EvalJobAdmin(admin.ModelAdmin):
 class EvalAdmin(admin.ModelAdmin):
     list_display = ('checkpoint',"subsample","metric","value")
 
+#class BootstrapValuesAdmin(admin.ModelAdmin):
+#    list_display = ('values',"evaluation")
+
 
 admin.site.register(Comparison, ComparisonAdmin)
+
 
 #admin.site.register(MTSystem, MTSystemAdmin)
 #admin.site.register(Checkpoint)
 
 admin.site.register(DataImport)
+admin.site.register(BootstrapValues)
 admin.site.register(EvalJob, EvalJobAdmin)
 admin.site.register(Evaluation, EvalAdmin)
 

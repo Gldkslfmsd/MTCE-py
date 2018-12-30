@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
 
 
-from .evaluators import metric_NA, BOOTSTRAP_EVALUATORS
+from .evaluators import metric_NA
 
 class ModelBase():
 
@@ -103,6 +103,9 @@ class FileWrapper(ModelBase, models.Model):
             lines = f.readlines()
         return lines[beg:end]
 
+    def structure_corrupted(self):
+        raise NotImplementedError()
+
 
 
 
@@ -123,7 +126,8 @@ class Comparison(FileWrapper):
     def systems_checkpoints(self):
         return ((s,c) for s in self.mtsystem_set.all() for c in s.checkpoint_set.all())
 
-
+    def structure_corrupted(self):
+        return self.is_corrupted
 
     #################
     # file structure
@@ -229,6 +233,8 @@ class MTSystem(ModelBase, models.Model):
 
 
 
+
+
 def create_Checkpoint(name,trans,sys):
     return Checkpoint(name=ModelBase.name_to_und(name),origtranslationfile=trans,mtsystem=sys)
 
@@ -252,6 +258,9 @@ class Checkpoint(FileWrapper):
 
     def comparison(self):
         return self.mtsystem.comparison
+
+    def structure_corrupted(self):
+        return self.is_corrupted or self.comparison().structure_corrupted()
 
     def base_dir(self):
         basename = os.path.join(self.mtsystem.base_dir(), self.name_to_und(self.name))#+"__%d" % self.id)
@@ -285,15 +294,17 @@ class Checkpoint(FileWrapper):
         return self.count_number_of_lines(self.translationfile())
 
     def schedule_evaluation(self):
+        if self.structure_corrupted():
+            return
         if not EvalJob.objects.filter(checkpoint=self).exclude(state="stopped").exists():
             with transaction.atomic():
                 for metrics in EVALUATORS.keys():
                     job = EvalJob.create_new(metric=metrics,checkpoint=self)
                     job.save()
-                for metric,samples,sizes in BOOTSTRAP_EVALUATORS.keys():
-                    for s in range(samples):
-                        job = EvalJob.create_new(metric=metric,checkpoint=self,subsample=s)
-                        job.save()
+#                for metric,samples,sizes in BOOTSTRAP_EVALUATORS.keys():
+#                    for s in range(samples):
+#                        job = EvalJob.create_new(metric=metric,checkpoint=self,subsample=s)
+#                        job.save()
 
     def update_data_import(self):
         tr = self.translationfile()
@@ -444,6 +455,11 @@ class Evaluation(EvalBase):
     def __str__(self):
         return "%s:%s=%2.2f" % (self.checkpoint, self.metric, self.value)
 
+class BootstrapValues(models.Model):
+
+    values = models.TextField(max_length=200000)
+    evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
+
 
 
 JOB_STATES=[("w","waiting"),("s","scheduled"),("r","running"),("st","stopped"),("f","finished"),("failed","failed")]
@@ -490,11 +506,18 @@ class EvalJob(EvalBase):
         results = EVALUATORS[self.metric].eval(self.checkpoint.translation(),self.checkpoint.reference(),mask=mask)
         if self.state == "running":
             for m,r in zip(self.metric.split(), results):
-                e = Evaluation(metric=m, checkpoint=self.checkpoint, value=r,
+                if "bootstrap" in m.lower():
+                    value = -1
+                else:
+                    value = r
+                e = Evaluation(metric=m, checkpoint=self.checkpoint, value=value,
                                checkpoint_dataimport=self.checkpoint_dataimport,
                                reference_dataimport=self.reference_dataimport,
                                subsample=self.subsample)
                 e.save()
+                if "bootstrap" in m.lower():
+                    b = BootstrapValues(values=str(r),evaluation=e)
+                    b.save()
             self.state = "finished"
             self.save()
             print("##job finished",self.metric)

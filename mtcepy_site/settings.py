@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'bootstrap4',
     'bootstrap_themes',
     'jchart',
-    #'nested_admin',
+    'nested_admin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
