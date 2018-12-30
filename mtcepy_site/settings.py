@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'bootstrap4',
     'bootstrap_themes',
     'jchart',
-    'nested_admin',
+    #'nested_admin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -83,8 +83,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
- #       'AUTOCOMMIT': True,
- #       'ATOMIC_REQUESTS': True,
+        'AUTOCOMMIT': True,
+        'ATOMIC_REQUESTS': True,
+        'CONN_MAX_AGE': None,
         'TEST': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': os.path.join(BASE_DIR, 'testdb.sqlite3'),

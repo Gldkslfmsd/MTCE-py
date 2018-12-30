@@ -4,6 +4,10 @@ from django import db
 
 from .models import *
 from .management.commands.background_importer import *
+import datetime
+
+def now():
+    return datetime.datetime.now()
 
 import os
 
@@ -21,6 +25,8 @@ def copytree(src, dst, symlinks=False, ignore=None):
 base = os.path.join("files","tmp")
 
 class ComparisonTests(TestCase):
+    '''Test adding Comparison objects to the database, their validity etc.
+    '''
 
     def test_wrong_number_of_lines(self):
 
@@ -255,70 +261,119 @@ class TestEvaluator(TestCase):
 
         ref = self.reference_wmt18
         tr = self.marian_wmt18
-        sb = BLEU_subprocess().eval(tr,ref)
-        b = round(BLEU().eval(tr,ref),2)
+        sb = BLEU_subprocess().eval(tr,ref)[0]
+        b = round(BLEU().eval(tr,ref)[0],2)
         self.assertEquals(sb,b)
 
-    def test_evaluation(self):
-        c = Comparison(name="en-de WMT18",origsourcefile=self.source_wmt18,origreferencefile=self.reference_wmt18)
-        c.save()
-        s = MTSystem(name="marian",comparison=c)
-        s.save()
-        mts = MTSystem.objects.get(name="marian")
-        self.assertEqual(s,mts)
-        ch = create_Checkpoint("checkpoint-1",self.marian_wmt18,mts)
-        ch.save()
-
-        print("######")
-        for c in Comparison.objects.all():
-            print(c)
-        for s in MTSystem.objects.all():
-            print(s,s.checkpoint_set.all())
-        for ch in Checkpoint.objects.all():
-            print(ch,ch.mtsystem)
-        print("###### EvalJobs:")
-        for ej in EvalJob.objects.all():
-            print(ej)
-        print("#########")
-        j = EvalJob.acquire_job_or_none()
-        self.assertIsNotNone(j)
-        print("###### EvalJobs:")
-        for ej in EvalJob.objects.all():
-            print(ej)
-        print("#########")
-
-        em = EvaluationManager(1)
-        em.evaluation_manager_iteration()
-
-        time.sleep(20)
-        print("-------------------- all jobs:", settings.DATABASES)
-        for s in EvalJob.objects.all():
-            print(s)
-        print("----")
-
-
-
-    def test_concurrent_db_access(self):
-
-        def racey_function(arg):
-            print("abc")
-            return "SDFSFDSFS"
-            c = Comparison(name="concurrent_test%d" % arg,origsourcefile=self.source_wmt18,origreferencefile=self.reference_wmt18)
-            c.save()
-            return True
-
-        def is_success(result):
-            return result is True and not isinstance(result, Exception)
+#    def test_evaluation(self):
+#        c = Comparison(name="en-de WMT18",origsourcefile=self.source_wmt18,origreferencefile=self.reference_wmt18)
+#        c.save()
+#        s = MTSystem(name="marian",comparison=c)
+#        s.save()
+#        mts = MTSystem.objects.filter(name="marian").last()
+#        self.assertEqual(s,mts)
+#        ch = create_Checkpoint("checkpoint-1",self.marian_wmt18,mts)
+#        ch.save()
+#
+#        print("######")
+#        for c in Comparison.objects.all():
+#            print(c)
+#        for s in MTSystem.objects.all():
+#            print(s,s.checkpoint_set.all())
+#        for ch in Checkpoint.objects.all():
+#            print(ch,ch.mtsystem)
+#        print("###### EvalJobs:")
+#        for ej in EvalJob.objects.all():
+#            print(ej)
+#        print("#########")
+#        j = EvalJob.acquire_job_or_none()
+#        self.assertIsNotNone(j)
+#        print("###### EvalJobs:")
+#        for ej in EvalJob.objects.all():
+#            print(ej)
+#        print("#########")
+#
+#        em = EvaluationManager(1)
+#        em.evaluation_manager_iteration()
+#
+#        time.sleep(20)
+#        print("-------------------- all jobs:", settings.DATABASES)
+#        for s in EvalJob.objects.all():
+#            print(s)
+#        print("----")
 
 
-        results = call_concurrently(1, racey_function, first_arg=1)
-        time.sleep(1)
-        print(results)
+
+#    def test_concurrent_db_access(self):
+#        ## TODO!!!
+#
+#        def racey_function(arg):
+#            print("abc")
+#            return "SDFSFDSFS"
+#            c = Comparison(name="concurrent_test%d" % arg,origsourcefile=self.source_wmt18,origreferencefile=self.reference_wmt18)
+#            c.save()
+#            return True
+#
+#        def is_success(result):
+#            return result is True and not isinstance(result, Exception)
+#
+#
+        #results = call_concurrently(1, racey_function, first_arg=1)
+        #time.sleep(1)
+        #print(results)
         # results contains the return value from each call
-        successes = list(filter(is_success, results))
+        #successes = list(filter(is_success, results))
+
+from .bootstrap import get_mask, get_masks, line_corpus_stats, bootstrap_corpus_bleu, masks_cache
+import numpy as np
+import pickle
+
+class TestBootstrapMasks(TestCase):
+
+    marian_wmt18 = "files/test/marian.wmt18.en-de"
+    reference_wmt18 = os.path.join(os.path.expanduser("~"),".sacrebleu/wmt18/en-de.de")
+    source_wmt18 = os.path.join(os.path.expanduser("~"),".sacrebleu/wmt18/en-de.en")
 
 
+    def test_masks_are_always_same(self):
 
+        A = os.path.join(base,"test_a")
+        with open(A, "w") as f:
+            print("abc sdfsdfs\n"*1000, file=f,end="")
+        m1 = list(get_mask(A,10))
+        m2 = list(get_mask(A,10))
+
+        self.assertListEqual(m1,m2)
+        generated_mask = [722, 9, 242, 519, 138, 735, 83, 907, 352, 438, 372, 751, 130, 788, 407, 760, 853, 391, 318, 81, 617, 298, 225, 612, 28, 691, 461, 116, 103, 640, 743, 719, 447, 854, 672, 31, 476, 718, 931, 203, 192, 131, 608, 35, 561, 240, 738, 700, 356, 239, 533, 732, 42, 858, 485, 664, 77, 264, 452, 119, 772, 323, 406, 701, 147, 583, 281, 891, 715, 199, 987, 754, 259, 977, 0, 979, 359, 207, 850, 162, 820, 560, 793, 371, 256, 18, 821, 65, 822, 155, 357, 308, 157, 504, 596, 63, 15, 906, 73, 495]
+        self.assertListEqual(m1,generated_mask)
+
+
+    def test_line_corpus_stats(self):
+
+        sys = ["a","b","c"]*3
+        ref = [["xa","b","c"]*3]
+
+        s = line_corpus_stats(sys,ref)
+
+#        print(s)
+#        print(np.sum(s,axis=0))
+        # Note: manual check needed here
+
+    def test_bootstrap_bleu(self):
+
+        sys = open(self.marian_wmt18,"r").readlines()
+        ref = [open(self.reference_wmt18,"r").readlines()]
+        print("getting masks", now())
+        masks = get_masks(self.marian_wmt18,1000,300)
+        print("masks ready", now())
+
+        x = bootstrap_corpus_bleu(sys, ref, masks)
+#        Note: this is for manual check again
+        print(x)
+
+#        c = masks_cache
+        with open("masks_cache.pickle","wb") as f:
+            pickle.dump(masks_cache, f)
 
 
 

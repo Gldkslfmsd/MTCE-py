@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import ugettext as _
+from django.db import transaction
 import os
 import shutil
 # Create your models here.
@@ -9,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
 
 
-from .evaluators import metric_NA
+from .evaluators import metric_NA, BOOTSTRAP_EVALUATORS
 
 class ModelBase():
 
@@ -285,9 +286,14 @@ class Checkpoint(FileWrapper):
 
     def schedule_evaluation(self):
         if not EvalJob.objects.filter(checkpoint=self).exclude(state="stopped").exists():
-            for metrics in EVALUATORS.keys():
-                job = EvalJob.create_new(metric=metrics,checkpoint=self)
-                job.save()
+            with transaction.atomic():
+                for metrics in EVALUATORS.keys():
+                    job = EvalJob.create_new(metric=metrics,checkpoint=self)
+                    job.save()
+                for metric,samples,sizes in BOOTSTRAP_EVALUATORS.keys():
+                    for s in range(samples):
+                        job = EvalJob.create_new(metric=metric,checkpoint=self,subsample=s)
+                        job.save()
 
     def update_data_import(self):
         tr = self.translationfile()
@@ -426,6 +432,7 @@ class EvalBase(models.Model):
     checkpoint = models.ForeignKey(Checkpoint, on_delete=models.CASCADE)
     checkpoint_dataimport = models.ForeignKey(DataImport, on_delete=models.CASCADE, related_name="+")
     reference_dataimport = models.ForeignKey(DataImport, on_delete=models.CASCADE)
+    subsample = models.IntegerField(default=-1)
 
     def __str__(self):
         return "%s:%s" % (self.checkpoint, self.metric)
@@ -439,46 +446,54 @@ class Evaluation(EvalBase):
 
 
 
-
-
 JOB_STATES=[("w","waiting"),("s","scheduled"),("r","running"),("st","stopped"),("f","finished"),("failed","failed")]
 
 import random
 import time
 from .evaluators import EVALUATORS
+from .bootstrap import get_mask
+
+
 
 class EvalJob(EvalBase):
 
     state = models.CharField(default="waiting",max_length=50)
     priority = models.IntegerField(default=0)
 
+
     def __str__(self):
         return "%s:%s,state=%s" % (self.checkpoint, self.metric, self.state)
 
-    @staticmethod
-    def create_new(metric,checkpoint):
-        cdi = DataImport.objects.get(object=checkpoint.mtsystem.comparison,type=type_dict["reference.txt"])
-        chdi = DataImport.objects.get(object=checkpoint)
-        return EvalJob(metric=metric,checkpoint=checkpoint,reference_dataimport=cdi,checkpoint_dataimport=chdi)
-
-    @staticmethod
-    def waiting_jobs():
-        return EvalJob.objects.filter(state="waiting").all()
 
     def schedule(self):
         self.state = "scheduled"
         self.save()
 
+    @staticmethod
+    def create_new(metric,checkpoint,subsample=-1):
+        cdi = DataImport.objects.get(object=checkpoint.mtsystem.comparison,type=type_dict["reference.txt"])
+        chdi = DataImport.objects.get(object=checkpoint)
+        return EvalJob(metric=metric,checkpoint=checkpoint,reference_dataimport=cdi,checkpoint_dataimport=chdi,subsample=subsample)
+
+    @staticmethod
+    def waiting_jobs():
+        return EvalJob.objects.filter(state="waiting").all()
+
     def launch(self):
         self.state = "running"
         self.save()
         print("##launching job %s" % self.metric)
-        results = EVALUATORS[self.metric].eval(self.checkpoint.translation(),self.checkpoint.reference())
+        if self.subsample == -1:
+            mask = None
+        else:
+            mask = get_mask(self.checkpoint.translation(),self.subsample)
+        results = EVALUATORS[self.metric].eval(self.checkpoint.translation(),self.checkpoint.reference(),mask=mask)
         if self.state == "running":
             for m,r in zip(self.metric.split(), results):
                 e = Evaluation(metric=m, checkpoint=self.checkpoint, value=r,
                                checkpoint_dataimport=self.checkpoint_dataimport,
-                               reference_dataimport=self.reference_dataimport)
+                               reference_dataimport=self.reference_dataimport,
+                               subsample=self.subsample)
                 e.save()
             self.state = "finished"
             self.save()
@@ -495,6 +510,18 @@ class EvalJob(EvalBase):
             job.state = "scheduled"
             job.save()
         return job
+
+    @staticmethod
+    def acquire_pack_of_jobs_or_none(num):
+        with transaction.atomic():
+            jobs = []
+            for i in range(num):
+                j = EvalJob.acquire_job_or_none()
+                if j is not None:
+                    jobs.append(j)
+                else:
+                    break
+            return jobs
 
 
 

@@ -22,13 +22,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         info("started")
         while True:
-            job = EvalJob.acquire_job_or_none()
-            if job is None:
+            jobs = EvalJob.acquire_pack_of_jobs_or_none(100)
+            if jobs == []:
                 info("no available job, ending")
                 break
-            info("job %s acquired " % job)
-            job.launch()
-            info("job %s finished" % job)
+            info("jobs %s acquired " % jobs)
+            for job in jobs:
+                job.launch()
+                info("job %s finished" % job)
         info("evaluation worker ends")
         sys.exit(0)
 
