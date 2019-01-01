@@ -3,21 +3,32 @@
 
 {% block content %}
 <h1>Comparisons</h1>
-<table class="table table-hover">
-    <thead>
+
+{% if comparisons %}
+    <table class="table table-hover">
+        <thead>
+            <!-- <tr>
+                <th>name</th>
+                <th>description</th>
+            </tr>
+            --!>
+        </thead>
+        <!-- <th>documents</th>
+        <th>total sentences</th>
+        !-->
+        {% for comp in comparisons %}
         <tr>
-            <th>name</th>
-            <th>description</th>
+            <td><a href="{% url 'mtce:comparison_detail' comp.id %}">{{ comp.name }}</a></td>
+            <td>{{ comp.description }}</td>
+            <td><a href="../admin/mtce/comparison/{{ comp.id }}/change/">Edit</a></td>
+            <td><a href="../admin/mtce/comparison/{{ comp.id }}/delete/">Delete</a></td>
         </tr>
-    </thead>
-	<!-- <th>documents</th>
-	<th>total sentences</th>
-	!-->
-    {% for comp in comparisons %}
-	<tr>
-		<td><a href="{% url 'mtce:comparison_detail' comp.id %}">{{ comp.name }}</a></td>
-		<td>{{ comp.description }}</td>
-	</tr>
-	{% endfor %}
-</table>
+        {% endfor %}
+
+    </table>
+{% else %}
+    <p>No comparisons to show.</p>
+{% endif %}
+    <p><a href="../admin/mtce/comparison/add/">Add new comparison.</a></p>
+
 {% endblock %}

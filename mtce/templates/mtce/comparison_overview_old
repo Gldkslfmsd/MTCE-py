@@ -1,6 +1,8 @@
 {% extends "mtce/base.html" %}
 
-
+{% block menu %}
+    {% include "mtce/menu.html" %}
+{% endblock menu %}
 
 {% block content %}
 

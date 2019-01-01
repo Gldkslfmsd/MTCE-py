@@ -1,0 +1,70 @@
+{% extends "mtce/base.html" %}
+
+
+{% block menu %}
+    {% include "mtce/menu.html" %}
+{% endblock menu %}
+
+{% block content %}
+
+<h1>{{ comparison.name }}</h1>
+
+{% if comparison.description %}
+    <p>{{ comparison.description }}</p>
+{% endif %}
+
+
+    <div id="accordion">
+    {% for chart in metric_bar_charts %}
+  <div class="card">
+    <div class="card-header" id="heading{{ forloop.counter }}">
+      <h5 class="mb-0">
+        <button class="btn btn-link" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="{% if forloop.first == True %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
+            {{ chart.title }}
+        </button>
+      </h5>
+    </div>
+
+    <div id="collapse{{ forloop.counter }}" class="collapse{% if forloop.first == True %} show{% endif %}" aria-labelledby="heading{{ forloop.counter }}" data-parent="#accordion">
+      <div class="card-body">
+          {{ chart.as_html }}
+      </div>
+    </div>
+  </div>
+    {% endfor %}
+    </div>
+
+    {% comment %}
+{% load jchart %}
+{% render_chart 'mtce:line_chart' %}
+{% endcomment %}
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th scope="col">MT System</th>
+      <th scope="col">Checkpoint</th>
+        {% for metric in metrics %}
+          <th scope="col">{{ metric }}</th>
+        {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+  {% for sys,cp,metricvalues in systems_checkpoints_metricvalues %}
+    <tr class="table-light">
+        <th scope="row"><a href="{% url 'mtce:system_detail' sys.id %}">{{ sys }}</a></th>
+      <td>{{ cp }}</td>
+        {% for mv in metricvalues %}
+          <td>{{ mv }}</td>
+        {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+
+
+
+
+
+{% endblock %}

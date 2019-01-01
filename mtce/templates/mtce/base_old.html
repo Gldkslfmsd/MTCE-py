@@ -1,5 +1,6 @@
 {# Load the tag library #}
 {% load static %}
+{% load jchart %}
 {% load i18n %}
 {% load bootstrap_themes %}
 {% load bootstrap4 %}
@@ -31,8 +32,34 @@
   </button>
 
 
-        {% block menu %}{% endblock %}
+  <div class="collapse navbar-collapse" id="navbarColor01">
+    <ul class="navbar-nav mr-auto">
 
+
+	{% if comparisons %}
+            <li class="nav-item dropdown {% if active == 'comp' %}active{% endif %}">
+                <a class="nav-link dropdown-toggle {% if active == 'comp' %}active{% endif %}" data-toggle="dropdown" href="{% url 'mtce:index' %}" id="themes">Comparisons<span class="caret"></span></a>
+            <div class="dropdown-menu" aria-labelledby="themes">
+                {% for comp in comparisons %}
+                    <a class="dropdown-item {% if comp.id == comparison.id %}active{% endif %}" href="{% url 'mtce:comparison_detail' comp.id %}">{{ comp.name }}</a>
+                {% endfor %}
+            </div>
+            </li>
+    {% else %}
+      <li class="nav-item {% if active == 'comp' %}active{% endif %}">
+        <a class="nav-link" href="{% url 'mtce:index' %}">Comparisons</a>
+      </li>
+	{% endif %}
+
+      <li class="nav-item {% if active == 'edit' %}active{% endif %}">
+        <a class="nav-link" href="{% url 'mtce:edit' %}">Edit</a>
+      </li>
+
+      <li class="nav-item {% if active == 'help' %}active{% endif %}">
+        <a class="nav-link" href="{% url 'mtce:help' %}">Help</a>
+      </li>
+    </ul>
+  </div>
 </nav>
 
     <div class="container">
@@ -43,12 +70,10 @@
 
 
 
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<!--	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script> !-->
 		<script src="{% static 'mtce/jquery.min.js' %}"></script>
     <script src="{% static 'mtce/popper.min.js' %}"></script>
      <script src="{% static 'mtce/bootstrap.min.js' %}"></script>
      <script src="{% static 'mtce/custom.js' %}"></script>
-
 	</body>
 </html>
