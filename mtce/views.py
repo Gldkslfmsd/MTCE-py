@@ -54,16 +54,19 @@ def system_overview(request, system_id):
 
     comp = sys.comparison
     checkpoints = sys.checkpoints()
-    print([ (ch,[round(ch.get_metric_value(m),2) for m in METRICS]) for ch in checkpoints ])
+#    print([ (ch,[round(ch.get_metric_value(m),2) for m in METRICS]) for ch in checkpoints ])
+    metrics = METRICS
+    checkpoints_metricvalues = [ (ch,[ round(ch.get_metric_value(m),2) for m in metrics]) for ch in checkpoints ]
     return render(request,
                   'mtce/system_overview.html',
                   {'comparison': comp,
                    'system': sys,
                    'comparisons': get_comparisons(),
-                   'active': 'system',
                    'checkpoints': checkpoints,
                    'metrics':METRICS,
-                   'checkpoints_metricvalues':[ (ch,[round(ch.get_metric_value(m),2) for m in METRICS]) for ch in checkpoints ]
+                   'checkpoints_metricvalues':[ (ch,[round(ch.get_metric_value(m),2) for m in METRICS]) for ch in checkpoints ],
+                   'metric_bar_charts': [ MetricBarChart(metric,[(sys, b,c[i]) for b,c in checkpoints_metricvalues]) \
+                                                         for i,metric in enumerate(metrics) ],
                    }
                   )
 

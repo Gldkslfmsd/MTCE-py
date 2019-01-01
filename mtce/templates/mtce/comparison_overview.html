@@ -57,12 +57,16 @@
         {% for mv in metricvalues %}
           <td>{{ mv }}</td>
         {% endfor %}
+     {% comment %}   <td><a href="../../../admin/mtce/comparison/{{ sys.id }}/change/">Edit</a></td>
+     {% endcomment %}
     </tr>
   {% endfor %}
   </tbody>
 </table>
 
-
+    <p>
+<a href="../../../admin/mtce/comparison/{{ sys.id }}/change/">Edit</a>
+    </p>
 
 
 
