@@ -22,7 +22,7 @@ urlpatterns = [
     path('help', views.help, name='help'),
     path('edit', views.edit, name='edit'),
 
-
+    path('show_sentences/<int:comparison_id>/', views.show_sentences, name="show_sentences"),
 
     path('charts/line_chart/', here, name='line_chart'),
 

@@ -1,0 +1,69 @@
+<script>
+$(document).ready(function(){
+  {% for s in first_sentences %}
+    $("#display_{{ s.id }}").click(function(){
+      $(".sent_{{ s.id }}").toggle();
+    });
+      if ($("#display_{{ s.id }}").prop('checked')) {
+          $(".sent_{{ s.id }}").show();
+      } else {
+          $(".sent_{{ s.id }}").hide();
+      };
+  {% endfor %}
+});
+</script>
+
+
+{% comment %}
+Sentence visibility options card
+{% endcomment %}
+
+<div class="row">
+  <div class="card text-white bg-secondary mb-3" style="max-width: 20rem;">
+  <div class="card-header">Sentence Visibility Options</div>
+  <div class="card-body">
+    <p class="card-text">
+    {% for s in first_sentences %}
+            <input type="checkbox" name="display_{{ s.id }}" id="display_{{ s.id }}" value="{{ s.id }}" {% if s.show %}checked=""{% endif %}>
+            <label for="display_{{ s.id }}">
+            {{ s.name }}
+            </label> <br>
+    {% endfor %}
+    </p>
+  </div>
+</div>
+
+
+<div class="card border-secondary mb-3" style="max-width: 20rem;">
+                <div class="card-header">Order by</div>
+                <div class="card-body">
+                  <p class="card-text">
+                     <div class="form-group">
+                          <select class="form-control" id="exampleSelect1">
+                            <option>order in document</option>
+                            {% for metric in metrics %}
+                               <option>{{ metric }}</option>
+                              {% endfor %}
+                            <option>random</option>
+                          </select>
+                    </div>
+                    <button type="button" class="btn btn-secondary disabled">Ascending</button>
+                    <button type="button" class="btn btn-success">Descending</button>
+                  </p>
+                </div>
+              </div>
+
+</div>
+
+    {% for sent in sentences %}
+        <table class="table table-bordered">
+        {% for s in sent %}
+            <tr class="sent sent_{{ s.id }}" id="sent_{{ s.id }}_{{ forloop.counter }}">
+                <th width="10%">{{ s.name }}:</th>
+                <td>{{ s.text }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% endfor %}
+
+

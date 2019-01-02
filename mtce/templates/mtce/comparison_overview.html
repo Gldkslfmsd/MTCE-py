@@ -1,4 +1,5 @@
 {% extends "mtce/base.html" %}
+{% load jchart %}
 
 
 {% block menu %}
@@ -13,13 +14,47 @@
     <p>{{ comparison.description }}</p>
 {% endif %}
 
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active" data-toggle="tab" href="#home">Corpus Metrics</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#sentences">Sentences</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link disabled" href="#">Paired bootstrap</a>
+  </li>
+    {% comment %}
+  <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Dropdown</a>
+    <div class="dropdown-menu">
+      <a class="dropdown-item" href="#">Action</a>
+      <a class="dropdown-item" href="#">Another action</a>
+      <a class="dropdown-item" href="#">Something else here</a>
+      <div class="dropdown-divider"></div>
+      <a class="dropdown-item" href="#">Separated link</a>
+    </div>
+    {% endcomment %}
+  </li>
+</ul>
 
+<div id="myTabContent" class="tab-content">
+    {% comment %}
+    #############################################
+    barplots
+    #############################################
+    {% endcomment %}
+
+    {% comment %}
+    <div class="tab-pane fade show active" id="home">
+    {% endcomment %}
+<div class="tab-pane fade" id="home">
     <div id="accordion">
     {% for chart in metric_bar_charts %}
   <div class="card">
     <div class="card-header" id="heading{{ forloop.counter }}">
       <h5 class="mb-0">
-        <button class="btn btn-link" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="{% if forloop.first == True %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
+        <button class="btn btn-link nav nav-tab" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="{% if forloop.first == True %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
             {{ chart.title }}
         </button>
       </h5>
@@ -34,25 +69,36 @@
     {% endfor %}
     </div>
 
+
     {% comment %}
-{% load jchart %}
-{% render_chart 'mtce:line_chart' %}
-{% endcomment %}
+    #############################################
+    Corpus metrics table
+    #############################################
+    {% endcomment %}
 
 <table class="table table-hover">
-  <thead>
-    <tr>
-      <th scope="col">MT System</th>
-      <th scope="col">Checkpoint</th>
-        {% for metric in metrics %}
-          <th scope="col">{{ metric }}</th>
-        {% endfor %}
-    </tr>
-  </thead>
-  <tbody>
+
+<thead>
+<tr>
+  <th scope="col">MT System</th>
+  <th scope="col">Checkpoint</th>
+    {% for metric in metrics %}
+      <th scope="col">{{ metric }}</th>
+    {% endfor %}
+</tr>
+</thead>
+
+<form action="{% url 'mtce:index' %}" method="post">
+<tbody>
+{% csrf_token %}
   {% for sys,cp,metricvalues in systems_checkpoints_metricvalues %}
     <tr class="table-light">
-        <th scope="row"><a href="{% url 'mtce:system_detail' sys.id %}">{{ sys }}</a></th>
+        <th scope="row">
+            <input type="checkbox" name="choice" id="choice_{{ cp.id }}" value="{{ cp.id }}">
+            <label for="choice{{ forloop.counter }}">
+                <a href="{% url 'mtce:system_detail' sys.id %}">{{ sys }}</a>
+            </label>
+        </th>
       <td>{{ cp }}</td>
         {% for mv in metricvalues %}
           <td>{{ mv }}</td>
@@ -61,14 +107,40 @@
      {% endcomment %}
     </tr>
   {% endfor %}
+
   </tbody>
 </table>
+<button type="submit" class="btn btn-primary">Compare selected</button>
+</form>
+
+  {% comment %}
 
     <p>
 <a href="../../../admin/mtce/comparison/{{ sys.id }}/change/">Edit</a>
     </p>
 
+{% endcomment %}
+
+</div>
 
 
+
+{% comment %}  <div class="tab-pane fade" id="sentences">
+{% endcomment %}
+  <div class="tab-pane fade show active" id="sentences">
+
+
+  {% comment %}
+  Sentences:
+  {% endcomment %}
+
+
+      {% include 'mtce/show_sentences.html' %}
+
+
+
+
+  </div>
+</div>
 
 {% endblock %}
