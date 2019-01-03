@@ -22,7 +22,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         info("started")
         while True:
-            jobs = EvalJob.acquire_pack_of_jobs_or_none(100)
+            jobs = EvalJob.acquire_pack_of_jobs(100)
             if jobs == []:
                 info("no available job, ending")
                 break

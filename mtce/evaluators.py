@@ -65,7 +65,7 @@ class BootstrapSacreBleu(BLEU):
 
 
 EVALUATORS = {
-#    "BLEU": BLEU(),
+    "BLEU": BLEU(),
     "BLEU_lowercased": BLEU_lc(),
     "BLEU brevity_penalty": SacreBleu(),
     "BootstrapBLEU": BootstrapSacreBleu(),
@@ -76,6 +76,10 @@ METRICS = ["BLEU",
            "brevity_penalty",
            "BLEU_lowercased",
            ]
+
+#BOOTSTRAP_EVALUATORS = {
+#    ("BLEU",1000,100): SacreBleu(),
+#}
 
 from collections import defaultdict
 metric_NA = defaultdict(lambda: float("nan"))

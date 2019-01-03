@@ -301,10 +301,10 @@ class Checkpoint(FileWrapper):
                 for metrics in EVALUATORS.keys():
                     job = EvalJob.create_new(metric=metrics,checkpoint=self)
                     job.save()
-#                for metric,samples,sizes in BOOTSTRAP_EVALUATORS.keys():
-#                    for s in range(samples):
-#                        job = EvalJob.create_new(metric=metric,checkpoint=self,subsample=s)
-#                        job.save()
+                #for metric,samples,sizes in BOOTSTRAP_EVALUATORS.keys():
+                #    for s in range(samples):
+                #        job = EvalJob.create_new(metric=metric,checkpoint=self,subsample=s)
+                #        job.save()
 
     def update_data_import(self):
         tr = self.translationfile()
@@ -469,12 +469,14 @@ import time
 from .evaluators import EVALUATORS
 from .bootstrap import get_mask
 
-
-
 class EvalJob(EvalBase):
 
     state = models.CharField(default="waiting",max_length=50)
     priority = models.IntegerField(default=0)
+
+    def __init__(self,*a, **kw):
+        self.results = None
+        super().__init__(*a, **kw)
 
 
     def __str__(self):
@@ -495,7 +497,7 @@ class EvalJob(EvalBase):
     def waiting_jobs():
         return EvalJob.objects.filter(state="waiting").all()
 
-    def launch(self):
+    def _launch_old(self):
         self.state = "running"
         self.save()
         print("##launching job %s" % self.metric)
@@ -535,7 +537,7 @@ class EvalJob(EvalBase):
         return job
 
     @staticmethod
-    def acquire_pack_of_jobs_or_none(num):
+    def acquire_pack_of_jobs(num):
         with transaction.atomic():
             jobs = []
             for i in range(num):
@@ -547,7 +549,40 @@ class EvalJob(EvalBase):
             return jobs
 
 
+    def launch(self):
+        self.state = "running"
+        print("##launching job %s" % self.metric)
+        if self.subsample == -1:
+            mask = None
+        else:
+            mask = get_mask(self.checkpoint.get_lines_count(), self.subsample)
+        self.results = EVALUATORS[self.metric].eval(self.checkpoint.translation(),self.checkpoint.reference(),mask=mask)
+        print("##job %s done" % self)
+        self.state = "finished"
 
+
+
+    def save_to_db(self):
+        assert self.results is not None, "job must be finished before saving to db"
+        if self.state == "finished":
+            for m,r in zip(self.metric.split(), self.results):
+                if "bootstrap" in m.lower():
+                    value = -1
+                else:
+                    value = r
+                e = Evaluation(metric=m, checkpoint=self.checkpoint, value=value,
+                               checkpoint_dataimport=self.checkpoint_dataimport,
+                               reference_dataimport=self.reference_dataimport,
+                               subsample=self.subsample)
+                e.save()
+                if "bootstrap" in m.lower():
+                    b = BootstrapValues(values=str(r),evaluation=e)
+                    b.save()
+            self.state = "finished"
+            print("##job finished",self.metric)
+        else:
+            print("##job was stopped or failed")
+        self.delete()
 
 
 

@@ -9,6 +9,7 @@ def now():
 
 SEED = 1234
 SAMPLE_SIZE = 100
+CACHE_FILE = "masks_cache.pickle"
 
 # Masks are stored in a dict of following form:
 # { line_number: (RandomState, [mask_for_sample_id_0, mask_for_sample_id_1, ...]), ... }
@@ -16,10 +17,16 @@ SAMPLE_SIZE = 100
 masks_cache = {}
 
 # TODO: this is not advisable in production... solve it later
-with open("masks_cache.pickle","rb") as f:
+with open(CACHE_FILE,"rb") as f:
     #print("opening masks", now())
     masks_cache = pickle.load(f)
     #print("done", now())
+
+def pickle_masks_cache():
+    print("pickling %s" % CACHE_FILE)
+    with open(CACHE_FILE, "wb") as f:
+        pickle.dump(masks_cache, f)
+    print("pickling done")
 
 def get_mask(lines, sample_id, sample_size=None):
     assert sample_id >= 0
