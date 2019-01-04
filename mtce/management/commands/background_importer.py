@@ -1,11 +1,19 @@
 from django.core.management.base import BaseCommand
-
+from django.db import transaction
 from mtce.models import *
+from mtce.bootstrap import pickle_masks_cache
 
 import time
 import os
 import shutil
 import multiprocessing
+
+def info(msg, *a):
+    print("INFO: %s" % (msg), *a)
+
+def import_log(msg="", *a):
+    return
+    print("IMPORT:",msg, *a)
 
 class Command(BaseCommand):
 
@@ -27,20 +35,22 @@ class Command(BaseCommand):
 
         em = EvaluationManager(workers=workers)
         while True:
-            importing_loop_iteration()
+            with transaction.atomic():
+                importing_loop_iteration()
     #        deleting_loop()
             em.evaluation_manager_iteration()
+            #pickle_masks_cache()
             if not infinite:
                 break
             print()
-            time.sleep(2)
+            time.sleep(1)
 
 
 
 base = os.path.join("files","comparisons")
 
 def import_comparison(path):
-    print("    importing new comparison", path)
+    import_log("    importing new comparison", path)
     name = os.path.basename(path)
     src = os.path.join(path, "source.txt")
     ref = os.path.join(path, "reference.txt")
@@ -58,41 +68,41 @@ def import_comparison(path):
                         sys = create_MTSystem(dir,c)
                         sys.save()
 
-                        print("     creating MTSystem",sys)
+                        import_log("     creating MTSystem",sys)
                     cp = create_Checkpoint(cdir,trans,sys)
                     cp.save()
 #                    di = create_DataImport(trans,'translation.txt',cp)
-#                    print("     creating Checkpoint",cp)
+#                    import_log("     creating Checkpoint",cp)
 #                    di.save()
         else:
             if dir not in ("source.txt","reference.txt"):
-                print("ignoring extra file ",path,dir)
+                import_log("ignoring extra file ",path,dir)
 
 
 
 def check_comparison(path):
-    print("  inside check comparison",path)
+    import_log("  inside check comparison",path)
     for file in os.listdir(path):
         if file in ("source.txt", "reference.txt"):
             pfile = os.path.join(path, file)
-            print("  needs new import:",DataImport.needs_new_import(pfile))
+            import_log("  needs new import:",DataImport.needs_new_import(pfile))
             if DataImport.needs_new_import(pfile):
                 import_comparison(path)
-                print("  new import:", pfile)
+                import_log("  new import:", pfile)
                 return
             elif DataImport.needs_reimport(pfile):
-                print("  proceeding reimport",pfile)
+                import_log("  proceeding reimport",pfile)
                 DataImport.reimport(pfile, file)
             else:
-                print("  reimport not needed",pfile)
+                import_log("  reimport not needed",pfile)
 #        else:
-#            print("skipping %s" % file)
+#            import_log("skipping %s" % file)
 
 def import_checkpoint(path,sys,comp):
     try:
         c = Comparison.find_by_name(comp)
     except Comparison.DoesNotExist:
-        print("error, missing comparison")
+        import_log("error, missing comparison")
         return
 
     try:
@@ -112,85 +122,92 @@ def import_checkpoint(path,sys,comp):
 def check_checkpoint(path,sys=None,comp=None):
     for _,dirs,files in os.walk(path):
         if dirs:
-            print("ignoring",dirs)
+            import_log("ignoring",dirs)
         if "translation.txt" in files:
             tran_full = os.path.join(path,"translation.txt")
-            print("  checking checkpoint",tran_full)
-            print("  needs new import:",DataImport.needs_new_import(tran_full))
+            import_log("  checking checkpoint",tran_full)
+            import_log("  needs new import:",DataImport.needs_new_import(tran_full))
             if DataImport.needs_new_import(tran_full):
                 import_checkpoint(path,sys,comp)
             elif DataImport.needs_reimport(tran_full):
-                print("  needs reimport: True")
+                import_log("  needs reimport: True")
                 DataImport.reimport(os.path.join(path,'translation.txt'),'translation.txt')
-                print("  reimported")
+                import_log("  reimported")
             else:
-                print("  needs reimport: False")
+                import_log("  needs reimport: False")
 
 
 def importing_loop_iteration(infinite=True):
-        print("importing loop iteration...")
+        import_log("importing loop iteration...")
         for _,comp_dirs,files in os.walk(base):
             for comp_dir_name in comp_dirs:
                 comp_dir_full = os.path.join(base, comp_dir_name)
-                print(" checking comparison",comp_dir_full)
+                import_log(" checking comparison",comp_dir_full)
                 check_comparison(comp_dir_full)
-                print(" ",comp_dir_full,"check comparison done")
-                print()
+                import_log(" ",comp_dir_full,"check comparison done")
+                import_log()
                 for _,sys_dirs,extra_files in os.walk(comp_dir_full):
                     for sys_dir_name in sys_dirs:
                         sys_dir_full = os.path.join(comp_dir_full,sys_dir_name)
                         for _,ch_dirs,_ in os.walk(sys_dir_full):
                             for ch_dir in ch_dirs:
                                 ch_dir_full = os.path.join(sys_dir_full,ch_dir)
-                                print(" checkpoint check:",ch_dir_full)
+                                import_log(" checkpoint check:",ch_dir_full)
                                 check_checkpoint(ch_dir_full,sys=sys_dir_name,comp=comp_dir_name)
-                                print(" end of checkpoint check")
-                                print()
+                                import_log(" end of checkpoint check")
+                                import_log()
                     break
             break
 
 
 
 def deleting_loop(infinite=True):
+    # TODO: check if this is still necessary
     # TODO -- go through the database and delete objects, whose files were deleted
     while True:
         pass
         if not infinite:
             break
-        print()
+        import_log()
         time.sleep(2)
 
 import subprocess
+from collections import deque
+multiprocessing.log_to_stderr()
 
 class EvaluationManager:
 
     def __init__(self, workers):
-        self.running_workers = []
-        self.max_workers = workers
+        self.pool = multiprocessing.Pool(workers)
 
+        self.running_jobs = deque()
+
+    @staticmethod
+    def worker(job):
+        info("job %s started, state: %s" % (job, job.state))
+        job.launch()
+        info("job %s finished, state: %s" % (job, job.state))
+        return job
 
     def evaluation_manager_iteration(self):
         print("evaluation manager iteration...")
-        waiting_jobs = EvalJob.waiting_jobs().count()
-#        print("waiting jobs:!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n",waiting_jobs)
-        actualy_running_workers = []
-        workers_to_start = min(self.max_workers,waiting_jobs)
-        print(self.running_workers)
-        for w in self.running_workers:
-            print(w,w.poll())
-            if w.poll() is not None:
-                actualy_running_workers.append(w)
-                workers_to_start -= 1
-            # TODO: check, if the returncode is 0 or fail
-        self.running_workers = actualy_running_workers
+        jobs = EvalJob.acquire_pack_of_jobs(1000)
+        for job in jobs:
+            print("launching",job)
+            res = self.pool.apply_async(self.worker, (job,))
+            self.running_jobs.append(res)
 
-        workers_to_start = max(0,workers_to_start)
-        print("going to start %d workers" % workers_to_start)
-        env = os.environ
-#        env['DJANGO_SETTINGS_MODULE'] = "mtcepy_site.testsettings"
-
-        for i in range(workers_to_start):
-#            subpr = subprocess.Popen("./manage.py evaluation_worker -v 3 --settings mtcepy_site.testsettings".split(),env=env)
-            subpr = subprocess.Popen("./manage.py evaluation_worker -v 3".split(),env=env)
-            self.running_workers.append(subpr)
+        # one round around the queue to save the finished results to the database
+        end_plug = "[_PLUG_]"
+        self.running_jobs.append(end_plug)
+        with transaction.atomic():
+            while True:
+                res = self.running_jobs.popleft()
+                if res == end_plug:
+                    break
+                elif res.ready():
+                    job = res.get()
+                    job.save_to_db()
+                else:
+                    self.running_jobs.append(res)
 

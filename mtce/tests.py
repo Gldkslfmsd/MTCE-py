@@ -223,7 +223,7 @@ class DataImportTests(TestCase):
 
 
 
-from .evaluators import BLEU, BLEU_subprocess
+from .evaluators import BLEUEvaluator, BLEU_subprocess, get_corpus_metric
 import subprocess
 import os
 import sacrebleu
@@ -261,8 +261,9 @@ class TestEvaluator(TestCase):
 
         ref = self.reference_wmt18
         tr = self.marian_wmt18
-        sb = BLEU_subprocess().eval(tr,ref)[0]
-        b = round(BLEU().eval(tr,ref)[0],2)
+        sb = get_corpus_metric(BLEU_subprocess().eval(tr,ref),"BLEU")
+        b = get_corpus_metric(BLEUEvaluator().eval(tr,ref),"BLEU")
+        b = round(b,2)
         self.assertEquals(sb,b)
 
     def test_evaluation(self):

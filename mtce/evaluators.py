@@ -45,7 +45,14 @@ class Evaluation:
         """
         raise NotImplementedError()
 
-class BLEU(Evaluation):
+def get_corpus_metric(result,metric):
+    assert metric in result
+    res = result[metric]
+    if isinstance(res,dict):
+        return res["corpus"]
+    return res
+
+class BLEUEvaluator(Evaluation):
 
     LOWERCASE = False
 
@@ -67,12 +74,12 @@ class BLEU_subprocess(Evaluation):
         output = subprocess.check_output(["sacrebleu",ref,"-i",trans,"-b"]).decode('utf-8')
         return {BLEU:float(output)}
 
-class BLEU_lc(BLEU):
+class BLEU_lc(BLEUEvaluator):
     LOWERCASE = True
 
 
 
-class SacreBleu(BLEU):
+class SacreBleu(BLEUEvaluator):
 
     """Runs sacrebleu BLEU as a library and returns more metrics."""
 
@@ -83,7 +90,7 @@ class SacreBleu(BLEU):
         return {BLEU:bleu.score,
                 BREVITY_PENALTY:bleu.bp}
 
-class BootstrapSacreBleu(BLEU):
+class BootstrapSacreBleu(BLEUEvaluator):
 
     def eval(self, trans, ref, mask=None, bootstrap_samples=None,bootstrap_sizes=None):
         if bootstrap_samples is None:
