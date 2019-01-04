@@ -1,5 +1,6 @@
 from jchart import Chart
 from jchart.config import Axes
+from .evaluators import METRICS_RANGES
 
 from jchart.config import Axes, DataSet, rgba, Title
 
@@ -20,13 +21,6 @@ def pallete():
 class MetricBarChart(Chart):
     chart_type = 'bar'
     responsive = True
-
-    def get_maximum(self, metric):
-        if metric in ["brevity_penalty"]:
-            return 1
-        else:
-            return 100
-
 
     def __init__(self, metric, dataset):
 
@@ -50,8 +44,9 @@ class MetricBarChart(Chart):
 
 
 
+        min, max = METRICS_RANGES[metric]
         self.scales = {
-            'yAxes': [{"display": True, "ticks": {"min": 0, "max": self.get_maximum(metric)}}]
+            'yAxes': [{"display": True, "ticks": {"min": min, "max": max}}]
         }
 
         super().__init__()

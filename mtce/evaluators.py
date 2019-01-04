@@ -127,8 +127,12 @@ EVALUATORS = [
 #}
 
 
-# default values for not
+# default values for not available metrics
 
 from collections import defaultdict
 metric_NA = defaultdict(lambda: float("nan"))
 metric_NA["BLEU"] = -1
+
+# ranges to plot
+METRICS_RANGES = defaultdict(lambda: (0, 100))
+METRICS_RANGES[BREVITY_PENALTY] = (0.0, 1.0)
