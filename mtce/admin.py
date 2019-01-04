@@ -26,7 +26,7 @@ class ComparisonAdmin(NestedModelAdmin):
 
 
 class EvalJobAdmin(admin.ModelAdmin):
-    list_display = ('checkpoint',"subsample","state","metric")
+    list_display = ('checkpoint',"subsample","state","evaluator")
 #    inlines = [MTSystemTabularInline,] # CheckpointStackedInline]
 #    search_fields = ['name','description']
 

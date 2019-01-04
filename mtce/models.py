@@ -298,8 +298,8 @@ class Checkpoint(FileWrapper):
             return
         if not EvalJob.objects.filter(checkpoint=self).exclude(state="stopped").exists():
             with transaction.atomic():
-                for metrics in EVALUATORS.keys():
-                    job = EvalJob.create_new(metric=metrics,checkpoint=self)
+                for i in range(len(EVALUATORS)):
+                    job = EvalJob.create_new(evaluator=i,checkpoint=self)
                     job.save()
                 #for metric,samples,sizes in BOOTSTRAP_EVALUATORS.keys():
                 #    for s in range(samples):
@@ -439,7 +439,6 @@ class DataImport(models.Model):
 
 
 class EvalBase(models.Model):
-    metric = models.CharField(max_length=50)
     checkpoint = models.ForeignKey(Checkpoint, on_delete=models.CASCADE)
     checkpoint_dataimport = models.ForeignKey(DataImport, on_delete=models.CASCADE, related_name="+")
     reference_dataimport = models.ForeignKey(DataImport, on_delete=models.CASCADE)
@@ -450,6 +449,8 @@ class EvalBase(models.Model):
 
 
 class Evaluation(EvalBase):
+
+    metric = models.CharField(max_length=50)
     value = models.FloatField()
 
     def __str__(self):
@@ -457,6 +458,10 @@ class Evaluation(EvalBase):
 
 class BootstrapValues(models.Model):
 
+    values = models.TextField(max_length=200000)
+    evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
+
+class SentenceEvaluations(models.Model):
     values = models.TextField(max_length=200000)
     evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
 
@@ -471,6 +476,7 @@ from .bootstrap import get_mask
 
 class EvalJob(EvalBase):
 
+    evaluator = models.IntegerField()
     state = models.CharField(default="waiting",max_length=50)
     priority = models.IntegerField(default=0)
 
@@ -480,7 +486,7 @@ class EvalJob(EvalBase):
 
 
     def __str__(self):
-        return "%s:%s,state=%s" % (self.checkpoint, self.metric, self.state)
+        return "%s:%d,state=%s" % (self.checkpoint, self.evaluator, self.state)
 
 
     def schedule(self):
@@ -488,44 +494,14 @@ class EvalJob(EvalBase):
         self.save()
 
     @staticmethod
-    def create_new(metric,checkpoint,subsample=-1):
+    def create_new(evaluator,checkpoint,subsample=-1):
         cdi = DataImport.objects.get(object=checkpoint.mtsystem.comparison,type=type_dict["reference.txt"])
         chdi = DataImport.objects.get(object=checkpoint)
-        return EvalJob(metric=metric,checkpoint=checkpoint,reference_dataimport=cdi,checkpoint_dataimport=chdi,subsample=subsample)
+        return EvalJob(evaluator=evaluator,checkpoint=checkpoint,reference_dataimport=cdi,checkpoint_dataimport=chdi,subsample=subsample)
 
     @staticmethod
     def waiting_jobs():
         return EvalJob.objects.filter(state="waiting").all()
-
-    def _launch_old(self):
-        self.state = "running"
-        self.save()
-        print("##launching job %s" % self.metric)
-        if self.subsample == -1:
-            mask = None
-        else:
-            mask = get_mask(self.checkpoint.translation(),self.subsample)
-        results = EVALUATORS[self.metric].eval(self.checkpoint.translation(),self.checkpoint.reference(),mask=mask)
-        if self.state == "running":
-            for m,r in zip(self.metric.split(), results):
-                if "bootstrap" in m.lower():
-                    value = -1
-                else:
-                    value = r
-                e = Evaluation(metric=m, checkpoint=self.checkpoint, value=value,
-                               checkpoint_dataimport=self.checkpoint_dataimport,
-                               reference_dataimport=self.reference_dataimport,
-                               subsample=self.subsample)
-                e.save()
-                if "bootstrap" in m.lower():
-                    b = BootstrapValues(values=str(r),evaluation=e)
-                    b.save()
-            self.state = "finished"
-            self.save()
-            print("##job finished",self.metric)
-        else:
-            print("##job was stopped")
-        self.delete()
 
     @staticmethod
     def acquire_job_or_none():
@@ -551,39 +527,45 @@ class EvalJob(EvalBase):
 
     def launch(self):
         self.state = "running"
-        print("##launching job %s" % self.metric)
+        print("##launching job %s" % self.evaluator)
         if self.subsample == -1:
             mask = None
         else:
             mask = get_mask(self.checkpoint.get_lines_count(), self.subsample)
-        self.results = EVALUATORS[self.metric].eval(self.checkpoint.translation(),self.checkpoint.reference(),mask=mask)
+        self.results = EVALUATORS[self.evaluator].eval(self.checkpoint.translation(),self.checkpoint.reference(),mask=mask)
         print("##job %s done" % self)
         self.state = "finished"
-
-
 
     def save_to_db(self):
         assert self.results is not None, "job must be finished before saving to db"
         if self.state == "finished":
-            for m,r in zip(self.metric.split(), self.results):
-                if "bootstrap" in m.lower():
-                    value = -1
+            for m,r in self.results.items():
+                if isinstance(r, dict):
+                    if "corpus" in r:
+                        corpus_value = r["corpus"]
+                    else:
+                        corpus_value = -1
                 else:
-                    value = r
-                e = Evaluation(metric=m, checkpoint=self.checkpoint, value=value,
+                    corpus_value = r
+                e = Evaluation(metric=m, checkpoint=self.checkpoint, value=corpus_value,
                                checkpoint_dataimport=self.checkpoint_dataimport,
                                reference_dataimport=self.reference_dataimport,
                                subsample=self.subsample)
                 e.save()
-                if "bootstrap" in m.lower():
-                    b = BootstrapValues(values=str(r),evaluation=e)
-                    b.save()
+                if isinstance(r, dict):
+                    if "bootstrap" in r:
+                        values = str(r["bootstrap"])
+                        b = BootstrapValues(values=str(values),evaluation=e)
+                        b.save()
+                    if "sentences" in r:
+                        s = SentenceEvaluations(values=str(values),evaluation=e)
+                        s.save()
             self.state = "finished"
-            print("##job finished",self.metric)
+            self.save()
+            print("##job finished",self.evaluator)
         else:
-            print("##job was stopped or failed")
+            print("##job was stopped")
         self.delete()
-
 
 
 
