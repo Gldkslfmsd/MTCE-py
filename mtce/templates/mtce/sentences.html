@@ -70,6 +70,27 @@ Sentence visibility options card
             </tr>
         {% endfor %}
         </table>
+
+        <table class="table table-bordered">
+            <tr>
+                <th width="10%"></th>
+                {% for m in metrics %}
+                    <th>{{ m }}</th>
+                {% endfor %}
+            </tr>
+            {% for s in sent %}
+                {% if s.has_metrics %}
+                    <tr class="sent_{{ s.id }}">
+                    <th width="10%">{{ s.name }}</th>
+                    {% for v in s.metrics_values %}
+                        <td>{{ v }}</td>
+                    {% endfor %}
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </table>
+        <br>
+        <br>
     {% endfor %}
 
 

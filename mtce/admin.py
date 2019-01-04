@@ -46,6 +46,7 @@ admin.site.register(Comparison, ComparisonAdmin)
 
 admin.site.register(DataImport)
 admin.site.register(BootstrapValues)
+admin.site.register(SentenceEvaluations)
 admin.site.register(EvalJob, EvalJobAdmin)
 admin.site.register(Evaluation, EvalAdmin)
 

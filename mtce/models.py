@@ -86,7 +86,8 @@ class FileWrapper(ModelBase, models.Model):
 
 
     ############
-    def browse_sentences(self, type, beg=None, end=None):
+    def get_plain_sentences(self, type):
+        """returns a plain list of lines"""
         if type == "translation":
             fn = self.translationfile()
         elif type == "source":
@@ -95,13 +96,9 @@ class FileWrapper(ModelBase, models.Model):
             fn = self.referencefile()
         else:
             raise ValueError
-        if not beg:
-            beg = 0
-        if not end:
-            end = -1
         with open(fn, "r") as f:
             lines = f.readlines()
-        return lines[beg:end]
+        return lines
 
     def structure_corrupted(self):
         raise NotImplementedError()
@@ -178,17 +175,6 @@ class Comparison(FileWrapper):
         for _,ch in self.systems_checkpoints():
             print("comparison: scheduling evaluation for ",ch)
             ch.schedule_evaluation()
-
-
-
-
-
-    def list_source_reference(self, beg=None, end=None):
-        return list(zip(self.browse_sentences("source", beg=beg, end=end),self.browse_sentences("reference",beg=beg,end=end)))
-
-
-
-
 
 
 
@@ -321,6 +307,13 @@ class Checkpoint(FileWrapper):
         return e.value
 
 
+    def get_sentence_evaluations(self):
+        """:return list of SentenceEvaluation objects for this checkpoint """
+        ev = Evaluation.objects.filter(checkpoint=self)
+        sev = SentenceEvaluations.objects.filter(evaluation__in=ev)
+        return list(sev)
+
+
 
 
 
@@ -444,10 +437,6 @@ class EvalBase(models.Model):
     reference_dataimport = models.ForeignKey(DataImport, on_delete=models.CASCADE)
     subsample = models.IntegerField(default=-1)
 
-    def __str__(self):
-        return "%s:%s" % (self.checkpoint, self.metric)
-
-
 class Evaluation(EvalBase):
 
     metric = models.CharField(max_length=50)
@@ -457,7 +446,6 @@ class Evaluation(EvalBase):
         return "%s:%s=%2.2f" % (self.checkpoint, self.metric, self.value)
 
 class BootstrapValues(models.Model):
-
     values = models.TextField(max_length=200000)
     evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
 
@@ -469,8 +457,6 @@ class SentenceEvaluations(models.Model):
 
 JOB_STATES=[("w","waiting"),("s","scheduled"),("r","running"),("st","stopped"),("f","finished"),("failed","failed")]
 
-import random
-import time
 from .evaluators import EVALUATORS
 from .bootstrap import get_mask
 
@@ -558,6 +544,7 @@ class EvalJob(EvalBase):
                         b = BootstrapValues(values=str(values),evaluation=e)
                         b.save()
                     if "sentences" in r:
+                        values = str(r["sentences"])
                         s = SentenceEvaluations(values=str(values),evaluation=e)
                         s.save()
             self.state = "finished"

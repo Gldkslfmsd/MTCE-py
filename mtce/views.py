@@ -5,17 +5,14 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
 from .models import Comparison, Checkpoint, MTSystem
 from .evaluators import METRICS
-from collections import namedtuple
 from .charts import *
+from .sentence_listing import get_all_sentences
 
 def get_comparisons():
     return Comparison.objects.all() #order_by('name') \
        # .annotate(documents=Count('document')) \
        # .annotate(total_sentences=Count('document__sentence'))
     # tasks_table = TaskTable(tasks)
-
-
-
 
 def index(request):
     """
@@ -30,8 +27,6 @@ def index(request):
          },
     )
 
-
-
 def corpus_metrics(request, comparison_id, system=None):
 
     comp = get_object_or_404(Comparison, pk=comparison_id)
@@ -43,7 +38,7 @@ def corpus_metrics(request, comparison_id, system=None):
 
     systems_checkpoints_metricvalues = [ (s,ch,[ round(ch.get_metric_value(m),2) for m in metrics]) for s,ch in systems_checkpoints ]
 
-    obj_dict = {
+    pass_args = {
                    'active':"corpus_metrics",  # for menu
                    'comparison': comp,
                    'systems_checkpoints_metricvalues': systems_checkpoints_metricvalues,
@@ -52,10 +47,9 @@ def corpus_metrics(request, comparison_id, system=None):
                                                          for i,metric in enumerate(metrics) ],
                    'system': system,
                    }
-
     return render(request,
                   'mtce/corpus_metrics.html',
-                   obj_dict,
+                   pass_args ,
                   )
 
 def system_index(request, system_id):
@@ -66,69 +60,22 @@ def sentences(request, comparison_id, system=None):
 
     comp = get_object_or_404(Comparison, pk=comparison_id)
 
-    obj_dict = {
+    sentences = get_all_sentences(comp,system)[:10]
+    pass_args = {
                    'active':"sentences",  # for top menu
                    'comparison': comp,
                    'system': system,
+                   'sentences': sentences,
+                   'first_sentences': sentences[0],
+                   'metrics': sentences[0][-1].metrics,
                    }
-
-    d = get_senteces_to_show(comp, system)
-    obj_dict.update(d)
     return render(request,
                   'mtce/sentences.html',
-                   obj_dict,
+                   pass_args,
                   )
 
 def system_sentences(request, system_id):
     system = get_object_or_404(MTSystem, pk=system_id)
     return sentences(request, system.comparison.id, system)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class Sentence:
-    def __init__(self,id,name,text,show):
-        self.id = id
-        self.text = text
-        self.name = name
-        self.show = show
-def get_senteces_to_show(comp, system=None, start=0, end=10):
-
-    sentences = [ [Sentence("src","source",src,True), Sentence("ref","reference",ref,True)] for src, ref in zip(
-        comp.browse_sentences("source",start,end), comp.browse_sentences("reference",start,end)) ]
-    if system is None:
-        systems_checkpoints = comp.systems_checkpoints()
-    else:
-        systems_checkpoints = [ (s,ch) for s,ch in comp.systems_checkpoints() if s==system]
-    for i,(sys,cp) in enumerate(systems_checkpoints):
-        if system is not None and sys != system: continue
-        name = "%s / %s" % (sys.name,cp.name)
-        for sent,cpsent in zip(sentences, cp.browse_sentences("translation",start,end)):
-            sent.append(Sentence(cp.id,name,cpsent,i<2))
-
-
-    return  {
-            "sentences": sentences,
-            "first_sentences": sentences[0],
-             "systems_checkpoints_sentences":[(s,ch,ch.browse_sentences("translation",start,end)) for s,ch in systems_checkpoints]
-           }
 

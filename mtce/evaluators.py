@@ -1,14 +1,10 @@
-
-
 import sacrebleu
 import subprocess
 import numpy as np
 
 from .bootstrap import get_masks, bootstrap_corpus_bleu
 
-
-
-class Evaluation:
+class Evaluator:
 
 
     BOOTSTRAP_SAMPLES = 1000
@@ -52,7 +48,7 @@ def get_corpus_metric(result,metric):
         return res["corpus"]
     return res
 
-class BLEUEvaluator(Evaluation):
+class BLEUEvaluator(Evaluator):
 
     LOWERCASE = False
 
@@ -65,7 +61,7 @@ class BLEUEvaluator(Evaluation):
         return {(BLEU if not self.LOWERCASE else BLEU_LOWER):bleu.score}
 
 
-class BLEU_subprocess(Evaluation):
+class BLEU_subprocess(Evaluator):
     """For debuggin and testing purposes only. Runs sacrebleu in subprocess, which should give the same results
     as runned as a library.
     """
@@ -89,6 +85,14 @@ class SacreBleu(BLEUEvaluator):
         bleu = sacrebleu.corpus_bleu(t,[r], lowercase=self.LOWERCASE)
         return {BLEU:bleu.score,
                 BREVITY_PENALTY:bleu.bp}
+
+class SentenceBleu(BLEUEvaluator):
+
+    def eval(self, trans, ref, mask=None, **kw):
+        trans,ref = self.open_files_mask(trans, ref, mask)
+        sentence_bleus = [ sacrebleu.sentence_bleu(t,r) for t,r in zip(trans,ref) ]
+        return {BLEU: {"sentences": sentence_bleus}}
+
 
 class BootstrapSacreBleu(BLEUEvaluator):
 
@@ -116,6 +120,7 @@ EVALUATORS = [
     BLEU_lc(),
     SacreBleu(),
     BootstrapSacreBleu(),
+    SentenceBleu(),
 ]
 
 #METRICS = list(set(x for e in EVALUATORS.keys() for x in e.split()))
