@@ -1,0 +1,27 @@
+{% extends "mtce/base.html" %}
+{% load jchart %}
+
+
+{% block top_menu %}
+    {% include "mtce/overview_top_menu.html" %}
+{% endblock top_menu %}
+
+{% block base_content %}
+
+    {% comment %}
+<h2>{{ comparison.name }}
+    {% if system %}
+      <small class="text-muted">{{ system.name }}</small>
+    {% endif %}
+</h2>
+{% endcomment %}
+
+{% if comparison.description %}
+    <p><b>Description:</b> {{ comparison.description }}</p>
+{% endif %}
+
+
+    {% block comparison_content %}{% endblock comparison_content %}
+
+
+{% endblock base_content %}

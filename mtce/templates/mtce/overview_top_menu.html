@@ -1,0 +1,52 @@
+{% comment %}<div class="collapse navbar-collapse" id="navbarColor01">
+{% endcomment %}
+
+
+
+
+<div class="collapse navbar-collapse" id="navbarColor01">
+
+    <ul class="nav nav-pills hav-justified" style="font-size: 20px;">
+{% comment %}
+
+    <ul class="navbar-nav mr-auto">
+    <ul class="nav nav-pills" style="font-size: 20px;">
+{% endcomment %}
+        <li class="nav-item">
+            <a class="nav-link {% if system %}{% else %}table-primary{% endif %}" href="{% url 'mtce:comparison_index' comparison.id %}">
+                <!-- <button type="button" class="btn btn-primary btn-lg nav-link{% if system %} nav-link{% endif %}">
+                -->
+                {{ comparison.name }}
+            </a>
+        </li>
+        {% if system %}
+        <li class="nav-item">
+            <a class="nav-link{% if system %} table-primary{% endif %}" href="{% url 'mtce:system_index' system.id %}" >
+                 {{ system.name }}
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</div>
+
+<ul class="nav nav-pills">
+  <li class="nav-item">
+    <a class="nav-link{% if active == "corpus_metrics" %} active{% endif %}"
+       href="{% if system %}{% url 'mtce:system_index' system.id %}{% else %}{% url 'mtce:comparison_index' comparison.id %}{% endif %}">
+       Corpus metrics
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link{% if active == "sentences" %} active{% endif %}"
+       href="{% if system %}{% url 'mtce:system_sentences' system.id %}{% else %}{% url 'mtce:comparison_sentences' comparison.id %}{% endif %}">
+        Sentences
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link disabled" href="#">Paired bootstrap</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="/admin/mtce/comparison/{{ comparison.id }}/change/">Edit</a>
+  </li>
+</ul>
+

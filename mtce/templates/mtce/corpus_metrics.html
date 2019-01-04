@@ -1,44 +1,9 @@
-{% extends "mtce/base.html" %}
-{% load jchart %}
+{% extends "mtce/comparison_base.html" %}
 
 
-{% block menu %}
-    {% include "mtce/menu.html" %}
-{% endblock menu %}
+{% block comparison_content %}
 
-{% block content %}
 
-<h1>{{ comparison.name }}</h1>
-
-{% if comparison.description %}
-    <p>{{ comparison.description }}</p>
-{% endif %}
-
-<ul class="nav nav-tabs">
-  <li class="nav-item">
-    <a class="nav-link active" data-toggle="tab" href="#home">Corpus Metrics</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link" data-toggle="tab" href="#sentences">Sentences</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link disabled" href="#">Paired bootstrap</a>
-  </li>
-    {% comment %}
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Dropdown</a>
-    <div class="dropdown-menu">
-      <a class="dropdown-item" href="#">Action</a>
-      <a class="dropdown-item" href="#">Another action</a>
-      <a class="dropdown-item" href="#">Something else here</a>
-      <div class="dropdown-divider"></div>
-      <a class="dropdown-item" href="#">Separated link</a>
-    </div>
-    {% endcomment %}
-  </li>
-</ul>
-
-<div id="myTabContent" class="tab-content">
     {% comment %}
     #############################################
     barplots
@@ -48,7 +13,6 @@
     {% comment %}
     <div class="tab-pane fade show active" id="home">
     {% endcomment %}
-<div class="tab-pane fade" id="home">
     <div id="accordion">
     {% for chart in metric_bar_charts %}
   <div class="card">
@@ -96,7 +60,7 @@
         <th scope="row">
             <input type="checkbox" name="choice" id="choice_{{ cp.id }}" value="{{ cp.id }}">
             <label for="choice{{ forloop.counter }}">
-                <a href="{% url 'mtce:system_detail' sys.id %}">{{ sys }}</a>
+                <a href="{% url 'mtce:system_index' sys.id %}">{{ sys }}</a>
             </label>
         </th>
       <td>{{ cp }}</td>
@@ -109,9 +73,9 @@
   {% endfor %}
 
   </tbody>
+</form>
 </table>
 <button type="submit" class="btn btn-primary">Compare selected</button>
-</form>
 
   {% comment %}
 
@@ -121,26 +85,4 @@
 
 {% endcomment %}
 
-</div>
-
-
-
-{% comment %}  <div class="tab-pane fade" id="sentences">
-{% endcomment %}
-  <div class="tab-pane fade show active" id="sentences">
-
-
-  {% comment %}
-  Sentences:
-  {% endcomment %}
-
-
-      {% include 'mtce/show_sentences.html' %}
-
-
-
-
-  </div>
-</div>
-
-{% endblock %}
+{% endblock comparison_content %}

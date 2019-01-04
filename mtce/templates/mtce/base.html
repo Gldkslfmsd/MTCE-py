@@ -26,20 +26,22 @@
     <body>
 
     <nav class="navbar navbar-expand-lg fixed-top navbar-dark bg-primary">
-  <a class="navbar-brand active" href="{% url 'mtce:index' %}">MTCE-py</a>
+<a class="nav-link {% if active == "index" %}table-primary{% endif %}" href="{% url 'mtce:index' %}" style="font-size:30px">MTCE-py</a>
+     {% comment %}
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
+  {% endcomment %}
 
 
-        {% block menu %}{% endblock %}
+        {% block top_menu %}{% endblock %}
 
 </nav>
 
     <div class="container">
         {# Display django.contrib.messages as Bootstrap alerts #}
         {% bootstrap_messages %}
-        {% block content %}{% endblock %}
+        {% block base_content %}{% endblock %}
     </div>
 
 

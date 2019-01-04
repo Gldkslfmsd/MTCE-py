@@ -1,7 +1,7 @@
 {% extends "mtce/base.html" %}
 
 
-{% block content %}
+{% block base_content %}
 <h1>Comparisons</h1>
 
 {% if comparisons %}
@@ -18,7 +18,7 @@
         !-->
         {% for comp in comparisons %}
         <tr>
-            <td><a href="{% url 'mtce:comparison_detail' comp.id %}">{{ comp.name }}</a></td>
+            <td><a href="{% url 'mtce:comparison_index' comp.id %}">{{ comp.name }}</a></td>
             <td>{{ comp.description }}</td>
             <td><a href="../admin/mtce/comparison/{{ comp.id }}/change/">Edit</a></td>
             <td><a href="../admin/mtce/comparison/{{ comp.id }}/delete/">Delete</a></td>
@@ -32,4 +32,4 @@
     <p><a href="../admin/mtce/comparison/add/">
         <button type="button" class="btn btn-success">Add a new comparison</button>
     </a></p>
-{% endblock %}
+{% endblock base_content %}
