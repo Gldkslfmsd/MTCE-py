@@ -67,6 +67,7 @@ def sentences(request, comparison_id, system=None):
                    'system': system,
                    'sentences': sentences,
                    'first_sentences': sentences[0],
+                   'checkpoint_names': [ s.name for s in sentences[0] if s.has_metrics ],
                    'metrics': sentences[0][-1].metrics,
                    }
     return render(request,

@@ -6,92 +6,154 @@
 
 <script>
 $(document).ready(function(){
-  {% for s in first_sentences %}
-    $("#display_{{ s.id }}").click(function(){
-      $(".sent_{{ s.id }}").toggle();
+    btn_on = "btn-display-on";
+    function reset_btn(b) {
+      if (b.hasClass(btn_on)) {
+          b.removeClass(btn_on);
+          b.removeClass("btn-success");
+          b.addClass("btn-secondary");
+      } else {
+          b.addClass(btn_on);
+          b.addClass("btn-success");
+          b.removeClass("btn-secondary");
+      }
+    }
+
+    $("#btn-show-sentence-metrics").click(function(){
+        b = $("#btn-show-sentence-metrics");
+        reset_btn(b);
+        $(".table-sent-metrics").toggle();
     });
-      if ($("#display_{{ s.id }}").prop('checked')) {
+
+  {% for s in first_sentences %}
+    $("#btn-display_{{ s.id }}").click(function(){
+        $(".sent_{{ s.id }}").toggle();
+        b = $("#btn-display_{{ s.id }}");
+        reset_btn(b);
+    });
+      if ($("#btn-display_{{ s.id }}").hasClass(btn_on)) {
           $(".sent_{{ s.id }}").show();
       } else {
           $(".sent_{{ s.id }}").hide();
       };
-  {% endfor %}
+{% endfor %}
 });
 </script>
 
-
-{% comment %}
-Sentence visibility options card
-{% endcomment %}
-
-<div class="row">
-  <div class="card text-white bg-secondary mb-3" style="max-width: 20rem;">
-  <div class="card-header">Sentence Visibility Options</div>
-  <div class="card-body">
-    <p class="card-text">
+{% with selected='show_hide' %}
+<span class="list-group-item  flex-column align-items-start" style="border:none;">
+    <div class="d-flex w-100 justify-content-between">
+        <h5 class="mb-1">Show/hide sentences</h5>
+    </div>
+    <p class="mb-1">
     {% for s in first_sentences %}
-            <input type="checkbox" name="display_{{ s.id }}" id="display_{{ s.id }}" value="{{ s.id }}" {% if s.show %}checked=""{% endif %}>
-            <label for="display_{{ s.id }}">
-            {{ s.name }}
-            </label> <br>
+    <button id="btn-display_{{ s.id }}" type="button"
+        {% if s.show %}
+            class="btn btn-success btn-display-on"
+        {% else %}
+            class="btn btn-secondary"
+        {% endif %}>
+        {{ s.name }}
+    </button>
     {% endfor %}
     </p>
-  </div>
-</div>
+</span>
+{% endwith %}
 
 
-<div class="card border-secondary mb-3" style="max-width: 20rem;">
-                <div class="card-header">Order by</div>
-                <div class="card-body">
-                  <p class="card-text">
-                     <div class="form-group">
-                          <select class="form-control" id="exampleSelect1">
-                            <option>order in document</option>
-                            {% for metric in metrics %}
-                               <option>{{ metric }}</option>
-                              {% endfor %}
-                            <option>random</option>
-                          </select>
-                    </div>
-                    <button type="button" class="btn btn-secondary disabled">Ascending</button>
-                    <button type="button" class="btn btn-success">Descending</button>
-                  </p>
-                </div>
-              </div>
 
-</div>
-
-    {% for sent in sentences %}
-        <table class="table table-bordered">
-        {% for s in sent %}
-            <tr class="sent sent_{{ s.id }}" id="sent_{{ s.id }}_{{ forloop.counter }}">
-                <th width="10%">{{ s.name }}:</th>
-                <td>{{ s.text }}</td>
-            </tr>
-        {% endfor %}
-        </table>
-
-        <table class="table table-bordered">
-            <tr>
-                <th width="10%"></th>
-                {% for m in metrics %}
-                    <th>{{ m }}</th>
-                {% endfor %}
-            </tr>
-            {% for s in sent %}
-                {% if s.has_metrics %}
-                    <tr class="sent_{{ s.id }}">
-                    <th width="10%">{{ s.name }}</th>
-                    {% for v in s.metrics_values %}
-                        <td>{{ v }}</td>
+{% with selected="sort" %}
+<span class="list-group-item  flex-column align-items-start" style="border:none;">
+    <div class="d-flex w-100 justify-content-between">
+        <h5 class="mb-1">Order by</h5>
+    </div>
+    <div class="d-flex justify-content-between">
+        <div class="form-group">
+            <select class="form-control-static" id="exampleSelect1">
+                <option>order in document</option>
+                {% for metric in metrics %}
+                    {% for cp in checkpoint_names %}
+                        <option>{{ metric }} on {{ cp }}</option>
                     {% endfor %}
-                    </tr>
-                {% endif %}
-            {% endfor %}
-        </table>
-        <br>
-        <br>
-    {% endfor %}
+                {% endfor %}
+                <option>random</option>
+            </select>
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary btn-sm">Ascending</button>
+                <button type="button" class="btn btn-success btn-sm">Descending</button>
+            </div>
+        </div>
+        <button id="btn-show-sentence-metrics" class="btn btn-success btn-display-on">Show sentence metrics</button>
 
+    </div>
+</span>
+{% endwith %}
+
+
+
+{% with selected="sentences_tables" %}
+         {% for sent in sentences %}
+                <table class="table table-sm">
+                    {% comment %}        <caption>Sentence {{ forloop.counter }}:</caption>
+{% endcomment %}
+                    <caption></caption>
+                    <tr>
+                        {% with "table table-sm table-bordered table-hover" as tableclasses %}
+                            <table class="{{ tableclasses }}">
+                                {% for s in sent %}
+                                    <tr class="sent sent_{{ s.id }}" id="sent_{{ s.id }}_{{ forloop.counter }}">
+                                        <th width="10%">{{ s.name }}:</th>
+                                        <td>{{ s.text }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </table>
+                            </tr>
+
+                            <tr>
+                                <table  class="{{ tableclasses }} table-sent-metrics">
+                                    <tr>
+                                        <th width="10%"></th>
+                                        {% for m in metrics %}
+                                            <th>{{ m }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                    {% for s in sent %}
+                                        {% if s.has_metrics %}
+                                            <tr class="sent_{{ s.id }}">
+                                                <th width="10%">{{ s.name }}</th>
+                                                {% for v in s.metrics_values %}
+                                                    <td>{{ v }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </table>
+                            </tr>
+                        {% endwith %}
+                </table>
+            {% endfor %}
+{% endwith %}
+
+<div class="container">
+    <div class="row">
+        <div class="col">
+            {{ about }}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm">
+            {{ sort }}
+        </div>
+        <div class="col-sm">
+            {{ sort2 }}
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-1">
+            {{ sentences_tables }}
+        </div>
+    </div>
+</div>{# jumbotron #}
 
 {% endblock comparison_content %}

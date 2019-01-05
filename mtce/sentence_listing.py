@@ -48,12 +48,7 @@ def get_translation_sentences(checkpoint, show):
 def get_nontranslation_sentences(id,name, texts, show):
     return [Sentence(id, name, t, show) for t in texts ]
 
-
-
-
-
 def get_all_sentences(comp, system=None):
-
     # src and ref
     sentences = [get_nontranslation_sentences("src","source",comp.get_plain_sentences("source"),True),
                 get_nontranslation_sentences("ref","reference",comp.get_plain_sentences("reference"),True)]
@@ -63,7 +58,7 @@ def get_all_sentences(comp, system=None):
     else:
         systems_checkpoints = [ (s,ch) for s,ch in comp.systems_checkpoints() if s==system]
 
-    # add the translation, together with metrics
+    # add the translation with metrics
     for i,(sys,cp) in enumerate(systems_checkpoints):
         s = get_translation_sentences(cp,i<2)
         sentences.append(s)
