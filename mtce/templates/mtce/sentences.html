@@ -6,7 +6,77 @@
 
 <script>
 $(document).ready(function(){
-    btn_on = "btn-display-on";
+    $("#all-done").hide();
+
+    var btn_on = "btn-display-on";
+    var load_next_batch = "load_next_batch";
+    var batch_size = 50;
+    var beg = 0;
+    var end = batch_size;
+    function reset_sentence_visibility() {
+        {% for s in first_sentences %}
+            if ($("#btn-display_{{ s.id }}").hasClass(btn_on)) {
+                $(".sent_{{ s.id }}").show();
+           //     $('#sss').text($('#sss').text()+"   show {{ s.id }} {{ s.name }} ||| ");
+            } else {
+                $(".sent_{{ s.id }}").hide();
+           //    $('#sss').text($('#sss').text()+" hide {{ s.id }} {{ s.name }} ||| ");
+            }
+        {% endfor %}
+    }
+    function reload_sentence_tables() {
+        $("#button-load-next").show();
+        $("#all-done").hide();
+        beg = 0;
+        end = batch_size;
+        var orderby = $("#select-order-by").val();
+        if ($("#button-order-asc").hasClass(btn_on)) {
+            var dir = "asc";
+        } else {
+            var dir = "desc";
+        }
+        $.get("/mtce/comparison/{{ comparison.id }}/sentences/"+orderby+"/"+dir+"/".concat(beg,"/",end,"/"), function(data, status) {
+            $("#sentences-div").html(data);
+            reset_sentence_visibility();
+            //$("."+load_next_batch).show(function() {
+             //   $('#sss').text($('#sss').text()+" tady");
+            //});
+//            $("#sentences-tables-end").show(load_next_sentence_tables);
+        });
+    }
+
+    function load_next_sentence_tables() {
+        beg = beg + batch_size;
+        end = end + batch_size;
+        var orderby = $("#select-order-by").val();
+        if ($("#button-order-asc").hasClass(btn_on)) {
+            var dir = "asc";
+        } else {
+            var dir = "desc";
+        }
+        $.get("/mtce/comparison/{{ comparison.id }}/sentences/"+orderby+"/"+dir+"/".concat(beg,"/",end,"/"), function(data, status) {
+            var previous = $("#sentences-div").html();
+            $("#sentences-div").html(previous+data);
+            reset_sentence_visibility();
+
+            if (data=="") {
+                $("#button-load-next").hide();
+                $("#all-done").show();
+            }
+            //$("#sentences-tables-end").show(load_next_sentence_tables);
+        });
+    }
+
+    $("#button-load-next").click(load_next_sentence_tables);
+
+    $("#sentences-div").show(reload_sentence_tables);
+    $("#select-order-by").change(reload_sentence_tables);
+
+
+
+
+
+    // the buttons changes color and btn_on class
     function reset_btn(b) {
       if (b.hasClass(btn_on)) {
           b.removeClass(btn_on);
@@ -19,24 +89,42 @@ $(document).ready(function(){
       }
     }
 
+    // show-hide sentence metrics button
     $("#btn-show-sentence-metrics").click(function(){
         b = $("#btn-show-sentence-metrics");
         reset_btn(b);
         $(".table-sent-metrics").toggle();
     });
 
-  {% for s in first_sentences %}
+    //  show-hide sentences buttons
+    {% for s in first_sentences %}
     $("#btn-display_{{ s.id }}").click(function(){
         $(".sent_{{ s.id }}").toggle();
         b = $("#btn-display_{{ s.id }}");
         reset_btn(b);
     });
-      if ($("#btn-display_{{ s.id }}").hasClass(btn_on)) {
-          $(".sent_{{ s.id }}").show();
-      } else {
-          $(".sent_{{ s.id }}").hide();
-      };
-{% endfor %}
+    {% endfor %}
+
+    // ascending and descending buttons
+    $("#button-order-asc").click(function(){
+        b = $("#button-order-asc");
+        reset_btn(b);
+        b = $("#button-order-desc");
+        reset_btn(b);
+        reload_sentence_tables();
+    });
+    $("#button-order-desc").click(function(){
+        b = $("#button-order-desc");
+        reset_btn(b);
+        b = $("#button-order-asc");
+        reset_btn(b);
+        reload_sentence_tables();
+    });
+
+
+
+    //
+    reset_sentence_visibility();
 });
 </script>
 
@@ -69,18 +157,20 @@ $(document).ready(function(){
     </div>
     <div class="d-flex justify-content-between">
         <div class="form-group">
-            <select class="form-control-static" id="exampleSelect1">
-                <option>order in document</option>
+            <select class="form-control-static" id="select-order-by">
+                <option value="document">order in document</option>
                 {% for metric in metrics %}
-                    {% for cp in checkpoint_names %}
-                        <option>{{ metric }} on {{ cp }}</option>
+                    {% for s in first_sentences %}
+                        {% if s.has_metrics %}
+                            <option value="metric>>>{{ metric }}>>>{{ s.id }}">{{ metric }} on {{ s.name }}</option>
+                        {% endif %}
                     {% endfor %}
                 {% endfor %}
-                <option>random</option>
+                <option value="random">random</option>
             </select>
             <div class="btn-group">
-                <button type="button" class="btn btn-secondary btn-sm">Ascending</button>
-                <button type="button" class="btn btn-success btn-sm">Descending</button>
+                <button id="button-order-asc" type="button" class="btn  btn-success btn-display-on btn-sm">Ascending</button>
+                <button id="button-order-desc" type="button" class="btn btn-secondary btn-sm">Descending</button>
             </div>
         </div>
         <button id="btn-show-sentence-metrics" class="btn btn-success btn-display-on">Show sentence metrics</button>
@@ -92,47 +182,21 @@ $(document).ready(function(){
 
 
 {% with selected="sentences_tables" %}
-         {% for sent in sentences %}
-                <table class="table table-sm">
-                    {% comment %}        <caption>Sentence {{ forloop.counter }}:</caption>
-{% endcomment %}
-                    <caption></caption>
-                    <tr>
-                        {% with "table table-sm table-bordered table-hover" as tableclasses %}
-                            <table class="{{ tableclasses }}">
-                                {% for s in sent %}
-                                    <tr class="sent sent_{{ s.id }}" id="sent_{{ s.id }}_{{ forloop.counter }}">
-                                        <th width="10%">{{ s.name }}:</th>
-                                        <td>{{ s.text }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </table>
-                            </tr>
+    {% comment %}
+    <div id="sss">0</div>
+    {% endcomment %}
 
-                            <tr>
-                                <table  class="{{ tableclasses }} table-sent-metrics">
-                                    <tr>
-                                        <th width="10%"></th>
-                                        {% for m in metrics %}
-                                            <th>{{ m }}</th>
-                                        {% endfor %}
-                                    </tr>
-                                    {% for s in sent %}
-                                        {% if s.has_metrics %}
-                                            <tr class="sent_{{ s.id }}">
-                                                <th width="10%">{{ s.name }}</th>
-                                                {% for v in s.metrics_values %}
-                                                    <td>{{ v }}</td>
-                                                {% endfor %}
-                                            </tr>
-                                        {% endif %}
-                                    {% endfor %}
-                                </table>
-                            </tr>
-                        {% endwith %}
-                </table>
-            {% endfor %}
+    <div id="sentences-div"></div>
+
+    <button id="button-load-next" class="btn btn-success btn-display-on">Next</button>
+
+    <div id="all-done"><p>All sentences have been loaded.</p></div>
 {% endwith %}
+
+
+
+
+
 
 <div class="container">
     <div class="row">

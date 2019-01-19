@@ -29,6 +29,10 @@ class Sentence:
             self.metrics.append(metric)
         self.has_metrics = True
 
+    def orderkey(self, metric):
+        assert metric in self.metrics
+        return self.metrics_values[self.metrics.index(metric)]
+
 
 
 

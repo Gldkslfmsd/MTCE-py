@@ -1,0 +1,40 @@
+         {% for sent in sentences %}
+                <table class="table table-sm">
+                    {% comment %}        <caption>Sentence {{ forloop.counter }}:</caption>
+{% endcomment %}
+                    <caption></caption>
+                    <tr>
+                        {% with "table table-sm table-bordered table-hover" as tableclasses %}
+                            <table class="{{ tableclasses }}">
+                                {% for s in sent %}
+                                    <tr class="sent sent_{{ s.id }}" id="sent_{{ s.id }}_{{ forloop.counter }}">
+                                        <th width="10%">{{ s.name }}:</th>
+                                        <td>{{ s.text }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </table>
+                            </tr>
+
+                            <tr>
+                                <table  class="{{ tableclasses }} table-sent-metrics">
+                                    <tr>
+                                        <th width="10%"></th>
+                                        {% for m in metrics %}
+                                            <th>{{ m }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                    {% for s in sent %}
+                                        {% if s.has_metrics %}
+                                            <tr class="sent_{{ s.id }}">
+                                                <th width="10%">{{ s.name }}</th>
+                                                {% for v in s.metrics_values %}
+                                                    <td>{{ v }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </table>
+                            </tr>
+                        {% endwith %}
+                </table>
+            {% endfor %}

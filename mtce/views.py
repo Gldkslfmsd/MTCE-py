@@ -7,6 +7,7 @@ from .models import Comparison, Checkpoint, MTSystem
 from .evaluators import METRICS
 from .charts import *
 from .sentence_listing import get_all_sentences
+import random
 
 def get_comparisons():
     return Comparison.objects.all() #order_by('name') \
@@ -56,11 +57,54 @@ def system_index(request, system_id):
     system = get_object_or_404(MTSystem, pk=system_id)
     return corpus_metrics(request, system.comparison.id, system)
 
+
+
+def sentences_query(request, comparison_id, orderby, dir, system=None, beg=0, end=100):
+    comp = get_object_or_404(Comparison, pk=comparison_id)
+
+    sentences = get_all_sentences(comp,system)
+    if orderby == "document":
+        if dir == "desc":
+            sentences = sentences[::-1]
+    elif orderby == "random":
+        random.shuffle(sentences)
+    else:
+        if dir == "desc":
+            reverse = True
+        else:
+            reverse = False
+        _, metric, cp = orderby.split(">>>")
+        cp = int(cp)
+        def orderkey(sents):
+            for s in sents:
+                if s.id == cp:
+                    return s.orderkey(metric)
+        sentences = sorted(sentences, key=orderkey, reverse=reverse)
+
+    sentences = sentences[beg:end]
+    if (sentences!=[]):
+        pass_args = {
+                       'active':"sentences",  # for top menu
+                       'comparison': comp,
+                       'system': system,
+                       'sentences': sentences,
+                       'first_sentences': sentences[0],
+                       'checkpoint_names': [ s.name for s in sentences[0] if s.has_metrics ],
+                       'metrics': sentences[0][-1].metrics,
+                       }
+        return render(request,
+                      'mtce/sentences_tables.html',
+                       pass_args,
+                      )
+    else:
+        return HttpResponse("")
+
+
 def sentences(request, comparison_id, system=None):
 
     comp = get_object_or_404(Comparison, pk=comparison_id)
 
-    sentences = get_all_sentences(comp,system)[:10]
+    sentences = get_all_sentences(comp,system)[:200]
     pass_args = {
                    'active':"sentences",  # for top menu
                    'comparison': comp,
