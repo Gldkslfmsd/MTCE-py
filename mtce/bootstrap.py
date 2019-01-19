@@ -3,6 +3,7 @@ from sacrebleu import *
 import pickle
 
 import datetime
+import os
 
 def now():
     return datetime.datetime.now()
@@ -17,10 +18,13 @@ CACHE_FILE = "masks_cache.pickle"
 masks_cache = {}
 
 # TODO: this is not advisable in production... solve it later
-with open(CACHE_FILE,"rb") as f:
-    #print("opening masks", now())
-    masks_cache = pickle.load(f)
-    #print("done", now())
+if os.path.exists(CACHE_FILE):
+    with open(CACHE_FILE,"rb") as f:
+        #print("opening masks", now())
+        masks_cache = pickle.load(f)
+        #print("done", now())
+else:
+    print(CACHE_FILE,"not available, skipping loading")
 
 def pickle_masks_cache():
     print("pickling %s" % CACHE_FILE)

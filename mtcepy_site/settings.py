@@ -25,7 +25,9 @@ SECRET_KEY = '&+zqs-#g0)7=7)2+@#egmz7kps5sj=m=9_9f!d^tq8vtd0za@!'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "u-pl0.ms.mff.cuni.cz",
+]
 
 
 # Application definition

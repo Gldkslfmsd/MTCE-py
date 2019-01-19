@@ -1,11 +1,15 @@
 Django==2.1.2
 django-bootstrap-themes==3.3.6
 django-bootstrap4==0.0.7
+django-concurrent-test-helper==0.5.2
 django-jchart==0.4.2
 django-nested-admin==3.1.2
-pkg-resources==0.0.0
+mock==2.0.0
+numpy==1.15.4
+pbr==5.1.1
 python-monkey-business==1.0.0
 pytz==2018.6
 sacrebleu==1.2.11
 six==1.11.0
+tblib==1.3.2
 typing==3.6.6
