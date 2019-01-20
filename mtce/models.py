@@ -313,8 +313,12 @@ class Checkpoint(FileWrapper):
         sev = SentenceEvaluations.objects.filter(evaluation__in=ev)
         return list(sev)
 
+    def get_sentence_evaluations_dict(self):
+        sent_ev_dict = { ev.evaluation.metric:ev for ev in self.get_sentence_evaluations()}
+        return sent_ev_dict
 
-
+    def nice_name(self):
+        return "%s:%s" % (self.mtsystem.name, self.name)
 
 
 
@@ -453,6 +457,10 @@ class SentenceEvaluations(models.Model):
     values = models.TextField(max_length=200000)
     evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
 
+    def float_values(self):
+        # convert list formatted as a list to list of floats
+        # TODO: consider more effective way of storing list of floats in DB
+        return eval(self.values)
 
 
 JOB_STATES=[("w","waiting"),("s","scheduled"),("r","running"),("st","stopped"),("f","finished"),("failed","failed")]

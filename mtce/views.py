@@ -7,6 +7,7 @@ from .models import Comparison, Checkpoint, MTSystem
 from .evaluators import METRICS
 from .charts import *
 from .sentence_listing import get_all_sentences
+from .pairwise_diff import *
 import random
 
 def get_comparisons():
@@ -123,4 +124,54 @@ def system_sentences(request, system_id):
     system = get_object_or_404(MTSystem, pk=system_id)
     return sentences(request, system.comparison.id, system)
 
+
+
+def pairwise_index_args(comp, system):
+    metrics = METRICS
+    systems_checkpoints = comp.systems_checkpoints()
+    if system is not None:
+        systems_checkpoints = [(s,ch) for s,ch in systems_checkpoints if s == system]
+
+    systems_checkpoints_metricvalues = [ (s,ch,[ round(ch.get_metric_value(m),2) for m in metrics]) for s,ch in systems_checkpoints ]
+
+    pass_args = {
+                   'active':"pairwise",  # for menu
+                   'comparison': comp,
+                   'systems_checkpoints_metricvalues': systems_checkpoints_metricvalues,
+                   'metrics':metrics,
+#                   'metric_bar_charts': [ MetricBarChart(metric,[(a,b,c[i]) for a,b,c in systems_checkpoints_metricvalues]) \
+#                                                         for i,metric in enumerate(metrics) ]+[RadarChart()],
+                   'system': system,
+                   }
+    return pass_args
+
+def pairwise_index(request, comparison_id, system=None):
+    comp = get_object_or_404(Comparison, pk=comparison_id)
+    pass_args = pairwise_index_args(comp, system)
+    return render(request,
+                  'mtce/pairwise_index.html',
+                   pass_args ,
+                  )
+
+
+
+def pairwise_diff(request, comparison_id, system=None):
+    comp = get_object_or_404(Comparison, pk=comparison_id)
+    checkpoint_A, checkpoint_B = map(int,request.POST.getlist("choice[]"))
+    print(checkpoint_B, checkpoint_A)
+    A = get_object_or_404(Checkpoint, pk=checkpoint_A)
+    B = get_object_or_404(Checkpoint, pk=checkpoint_B)
+    print(checkpoint_A, A)
+    print(checkpoint_B, B)
+    x = sentence_level_diffs(A, B)
+    print(x)
+    pass_args = pairwise_index_args(comp, system)
+    pa = {
+        'sent_level_charts':x,
+    }
+    pass_args.update(pa)
+    return render(request,
+                  'mtce/pairwise_diff.html',
+                  pass_args
+                  )
 

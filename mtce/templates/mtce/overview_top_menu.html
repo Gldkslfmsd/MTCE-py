@@ -43,7 +43,7 @@
     </a>
   </li>
   <li class="nav-item">
-    <a class="nav-link disabled" href="#">Paired bootstrap</a>
+    <a class="nav-link{% if active == "pairwise" %} active{% endif %}" href="{% url 'mtce:pairwise_index' comparison.id %}">Pairwise diff</a>
   </li>
   <li class="nav-item">
     <a class="nav-link" href="/admin/mtce/comparison/{{ comparison.id }}/change/">Edit</a>

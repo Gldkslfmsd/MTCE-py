@@ -1,0 +1,98 @@
+{% extends "mtce/comparison_base.html" %}
+
+{% block comparison_content %}
+
+<script>
+$(document).ready(function(){
+    $("#button-select-pair").click(function() {
+        var checked = [];
+        $.each($(".checkpoint-selection:checked"), function() {
+            checked.push($(this).val());
+        });
+        if ((checked.length < 2) || (checked.length > 2)) {
+            alert("Select two checkpoints.");
+            return false;
+        }
+//        var v = $(".checkpoint-selection").val();
+//        var a = Math.min(checked);
+/*
+        var a = checked[0];
+        var b = checked[1];
+       // var b = Math.max(checked);
+
+        $("#div1").text("".concat(a," ",b));
+        $.get("/mtce/pairwise/diff/"+a+"/"+b+"/", function(data, status) {
+            $("#diff_placeholder").html(data);
+        });
+
+    */
+    });
+});
+</script>
+
+    {% block sentence_level_charts %}
+
+
+    {% endblock %}
+
+    {% comment %}
+    #############################################
+    Corpus metrics table
+    #############################################
+    {% endcomment %}
+
+        {% comment %}
+
+<form
+        action="{% url 'mtce:pairwise_diff' %}" method="post">
+        >
+        {% endcomment %}
+<form action="{% url 'mtce:pairwise_diff' comparison.id %}" method="post">
+<table class="table table-hover">
+
+<thead>
+<tr>
+  <th scope="col">MT System</th>
+  <th scope="col">Checkpoint</th>
+    {% for metric in metrics %}
+      <th scope="col">{{ metric }}</th>
+    {% endfor %}
+</tr>
+</thead>
+
+<tbody>
+{% comment %}
+{% endcomment %}
+{% csrf_token %}
+  {% for sys,cp,metricvalues in systems_checkpoints_metricvalues %}
+    <tr class="table-light">
+        <th scope="row">
+            <input class="checkpoint-selection" type="checkbox" name="choice[]" id="choice_{{ cp.id }}" value="{{ cp.id }}">
+            <label for="choice{{ forloop.counter }}">
+                <a href="{% url 'mtce:system_index' sys.id %}">{{ sys }}</a>
+            </label>
+        </th>
+      <td>{{ cp }}</td>
+        {% for mv in metricvalues %}
+          <td>{{ mv }}</td>
+        {% endfor %}
+     {% comment %}   <td><a href="../../../admin/mtce/comparison/{{ sys.id }}/change/">Edit</a></td>
+     {% endcomment %}
+    </tr>
+  {% endfor %}
+
+  </tbody>
+</table>
+<button id='button-select-pair' type="submit" class="btn btn-primary">Compare selected pair</button>
+</form>
+
+  {% comment %}
+
+</form>
+    <p>
+<a href="../../../admin/mtce/comparison/{{ sys.id }}/change/">Edit</a>
+    </p>
+
+{% endcomment %}
+
+{% endblock comparison_content %}

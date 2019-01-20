@@ -1,0 +1,14 @@
+{% extends 'mtce/pairwise_index.html' %}o
+
+
+{% block sentence_level_charts %}
+<div>
+{% for ch in sent_level_charts %}
+    <h3>{{ ch.title }}</h3>
+    {{ ch.as_html }}
+{% endfor %}
+</div>
+
+{% endblock %}
+
+

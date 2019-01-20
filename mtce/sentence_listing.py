@@ -39,12 +39,10 @@ class Sentence:
 def get_translation_sentences(checkpoint, show):
     name = "%s:%s" % (checkpoint.mtsystem.name, checkpoint.name)
     sents = [ Sentence(checkpoint.id, name, text, show) for text in checkpoint.get_plain_sentences("translation") ]
-    sent_ev_dict = { ev.evaluation.metric:ev for ev in checkpoint.get_sentence_evaluations()}
+    sent_ev_dict = checkpoint.get_sentence_evaluations_dict()
     for m in METRICS:
         if m not in sent_ev_dict: continue
-        # convert list formatted as a list to list of floats
-        # TODO: consider more effective way of storing list of floats in DB
-        values = eval(sent_ev_dict[m].values)
+        values = sent_ev_dict[m].float_values()
         for sent, v in zip(sents, values):
             sent.add_metric_value(m,v)
     return sents

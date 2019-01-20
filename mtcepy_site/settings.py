@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "u-pl0.ms.mff.cuni.cz",
+    "localhost",
 ]
 
 

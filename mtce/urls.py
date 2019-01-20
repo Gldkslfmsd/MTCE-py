@@ -19,6 +19,9 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('comparison/<int:comparison_id>/', views.corpus_metrics, name='comparison_index'),
 
+    path('pairwise/<int:comparison_id>/', views.pairwise_index, name='pairwise_index'),
+    path('pairwise/<int:comparison_id>/diff/', views.pairwise_diff, name='pairwise_diff'),
+
     path('comparison/<int:comparison_id>/sentences/', views.sentences, name='comparison_sentences'),
 
     path('comparison/<int:comparison_id>/sentences/<str:orderby>/<str:dir>/<int:beg>/<int:end>/', views.sentences_query, name="comparison_sentences_query"),
