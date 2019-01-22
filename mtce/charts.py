@@ -85,7 +85,7 @@ class SentLevelDiffChart(Chart):
 
         self.datasets = [DataSet(
                 type='line',
-                label='%s worse than %s' % (A,B),
+                label='%s wins' % B,
                 data=neg_data,
                 color=RED,
             ),
@@ -94,7 +94,7 @@ class SentLevelDiffChart(Chart):
             self.datasets.append(
                 DataSet(
                     type='line',
-                    label='%s equal to %s' % (A,B),
+                    label='draw',
                     data=same_data,
                     color=BLACK,
                 )
@@ -102,7 +102,7 @@ class SentLevelDiffChart(Chart):
         self.datasets.append(
             DataSet(
                 type='line',
-                label='%s better than %s' % (A,B),
+                label='%s wins' % A,
                 data=pos_data,
                 color=GREEN,
             )
@@ -118,6 +118,65 @@ class SentLevelDiffChart(Chart):
 
     def get_datasets(self, *args, **kwargs):
         return self.datasets
+
+class BootstrapChart(Chart):
+
+    chart_type = 'line'
+    responsive = True
+
+    def __init__(self, metric, A, B, Aname, Bname):
+
+        self.title = "Paired Bootstrap Resampling %s Differences" % metric
+
+        diffs = sorted(A-B)
+
+
+        negative = [d for d in diffs if d < 0]
+        same = [d for d in diffs if d == 0]
+        positive = [d for d in diffs if d > 0]
+
+#        self.datasets = [DataSet(type="line",label="sdfsfds",data={"x":list(range(len(negative))), "y":negative})]
+
+        neg_data = [{'y': v, 'x': i} for i,v in enumerate(negative)]
+        same_data = [{'y': v, 'x': i+len(negative)} for i,v in enumerate(same)]
+        pos_data = [{'y': v, 'x': i+len(negative)+len(same)} for i,v in enumerate(positive)]
+
+        self.datasets = [DataSet(
+                type='line',
+                label='%s wins' % Bname,
+                data=neg_data,
+                color=RED,
+            ),
+        ]
+        if len(same_data) > 0:
+            self.datasets.append(
+                DataSet(
+                    type='line',
+                    label='draw',
+                    data=same_data,
+                    color=BLACK,
+                )
+            )
+        self.datasets.append(
+            DataSet(
+                type='line',
+                label='%s wins' % Aname,
+                data=pos_data,
+                color=GREEN,
+            )
+        )
+
+        self.scales = {
+            'xAxes': [Axes(type='linear', position='bottom', ticks={"min":0, "max": len(diffs)})],
+            'yAxes': [{"title":metric}]
+        }
+
+        super().__init__()
+
+
+    def get_datasets(self, *args, **kwargs):
+        return self.datasets
+
 
 
 from jchart import Chart

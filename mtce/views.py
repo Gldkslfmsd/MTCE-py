@@ -163,11 +163,10 @@ def pairwise_diff(request, comparison_id, system=None):
     B = get_object_or_404(Checkpoint, pk=checkpoint_B)
     print(checkpoint_A, A)
     print(checkpoint_B, B)
-    x = sentence_level_diffs(A, B)
-    print(x)
     pass_args = pairwise_index_args(comp, system)
     pa = {
-        'sent_level_charts':x,
+        'sent_level_charts':sentence_level_charts(A, B)*3,
+        'bootstrap_charts': bootraps(A, B)*2,
     }
     pass_args.update(pa)
     return render(request,

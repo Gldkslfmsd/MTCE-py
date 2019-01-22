@@ -2,13 +2,22 @@
 
 
 {% block sentence_level_charts %}
-<div>
-{% for ch in sent_level_charts %}
-    <h3>{{ ch.title }}</h3>
-    {{ ch.as_html }}
-{% endfor %}
+<div class="container">
+    <div class="row">
+        <div class="col-sm">
+            {% for ch in sent_level_charts %}
+                <h4>{{ ch.title }}</h4>
+                {{ ch.as_html }}
+            {% endfor %}
+        </div>
+        <div class="col-sm">
+            {% for ch in bootstrap_charts %}
+                <h4>{{ ch.title }}</h4>
+                {{ ch.as_html }}
+            {% endfor %}
+        </div>
+    </div>
 </div>
-
 {% endblock %}
 
 

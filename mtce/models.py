@@ -8,7 +8,7 @@ import shutil
 from django.core.exceptions import ValidationError
 
 from django.contrib.contenttypes.models import ContentType
-
+import numpy as np
 
 from .evaluators import metric_NA
 
@@ -313,8 +313,17 @@ class Checkpoint(FileWrapper):
         sev = SentenceEvaluations.objects.filter(evaluation__in=ev)
         return list(sev)
 
+    def get_bootstrap_values(self):
+        """:return list of SentenceEvaluation objects for this checkpoint """
+        ev = Evaluation.objects.filter(checkpoint=self)
+        sev = BootstrapValues.objects.filter(evaluation__in=ev)
+        return list(sev)
+
+    def get_bootstrap_values_dict(self):
+        return  { v.evaluation.metric:np.array(v.float_values()) for v in self.get_bootstrap_values() }
+
     def get_sentence_evaluations_dict(self):
-        sent_ev_dict = { ev.evaluation.metric:ev for ev in self.get_sentence_evaluations()}
+        sent_ev_dict = { ev.evaluation.metric:np.array(ev.float_values()) for ev in self.get_sentence_evaluations()}
         return sent_ev_dict
 
     def nice_name(self):
@@ -449,18 +458,21 @@ class Evaluation(EvalBase):
     def __str__(self):
         return "%s:%s=%2.2f" % (self.checkpoint, self.metric, self.value)
 
-class BootstrapValues(models.Model):
-    values = models.TextField(max_length=200000)
-    evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
-
-class SentenceEvaluations(models.Model):
-    values = models.TextField(max_length=200000)
-    evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
-
+class FloatValuesWrapper():
     def float_values(self):
         # convert list formatted as a list to list of floats
         # TODO: consider more effective way of storing list of floats in DB
         return eval(self.values)
+
+
+class BootstrapValues(FloatValuesWrapper, models.Model):
+    values = models.TextField(max_length=200000)
+    evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
+
+class SentenceEvaluations(FloatValuesWrapper, models.Model):
+    values = models.TextField(max_length=200000)
+    evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE)
+
 
 
 JOB_STATES=[("w","waiting"),("s","scheduled"),("r","running"),("st","stopped"),("f","finished"),("failed","failed")]
