@@ -82,12 +82,13 @@ class SentLevelDiffChart(Chart):
         neg_data = [{'y': v, 'x': i} for i,v in enumerate(negative)]
         same_data = [{'y': v, 'x': i+len(negative)} for i,v in enumerate(same)]
         pos_data = [{'y': v, 'x': i+len(negative)+len(same)} for i,v in enumerate(positive)]
-
+        pr = {'pointRadius':0}
         self.datasets = [DataSet(
                 type='line',
                 label='%s wins' % B,
                 data=neg_data,
                 color=RED,
+                **pr,
             ),
         ]
         if len(same_data) > 0:
@@ -97,16 +98,20 @@ class SentLevelDiffChart(Chart):
                     label='draw',
                     data=same_data,
                     color=BLACK,
+                    **pr,
                 )
             )
-        self.datasets.append(
+        self.datasets += [
             DataSet(
                 type='line',
                 label='%s wins' % A,
                 data=pos_data,
                 color=GREEN,
-            )
-        )
+                **pr,
+            ),
+
+        ]
+
 
         self.scales = {
             'xAxes': [Axes(type='linear', position='bottom', ticks={"min":0, "max": len(diffs)})],
@@ -124,14 +129,27 @@ class BootstrapChart(Chart):
     chart_type = 'line'
     responsive = True
 
+    # 1-p level
+    alpha = 0.95
+
     def __init__(self, metric, A, B, Aname, Bname):
 
         self.title = "Paired Bootstrap Resampling %s Differences" % metric
 
         diffs = sorted(A-B)
 
-
         negative = [d for d in diffs if d < 0]
+
+        h = len(negative) / len(diffs)
+        if 1-self.alpha < h < self.alpha:
+            self.text_result = "The difference between %s and %s is statistically insignificant: p-value = 0.5." % (Aname, Bname)
+        elif h >= self.alpha:
+            self.text_result = "%s is statistically worse than %s: p-value < 0.5 (significant)" % (Aname, Bname)
+        else:
+            self.text_result = "%s is statistically better than %s: p-value < 0.5 (significant)" % (Aname, Bname)
+
+        #self.text_result += str(h)
+
         same = [d for d in diffs if d == 0]
         positive = [d for d in diffs if d > 0]
 
@@ -141,11 +159,25 @@ class BootstrapChart(Chart):
         same_data = [{'y': v, 'x': i+len(negative)} for i,v in enumerate(same)]
         pos_data = [{'y': v, 'x': i+len(negative)+len(same)} for i,v in enumerate(positive)]
 
-        self.datasets = [DataSet(
+        pr = {'pointRadius':0}
+
+        def percent_line(percent):
+            x = len(diffs)*percent//100
+            return DataSet(**pr,type="line",
+                    data=[{'x':x, #len(diffs)*100/percent,
+                          'y':diffs[0]},{'x':x,'y':diffs[-1]}],
+                    color=BLACK,
+                    label=str(percent)+" %"
+                    )
+
+        self.datasets = [
+            percent_line(5),
+            DataSet(
                 type='line',
                 label='%s wins' % Bname,
                 data=neg_data,
                 color=RED,
+                **pr,
             ),
         ]
         if len(same_data) > 0:
@@ -155,20 +187,23 @@ class BootstrapChart(Chart):
                     label='draw',
                     data=same_data,
                     color=BLACK,
+                    **pr,
                 )
             )
-        self.datasets.append(
+        self.datasets += [
             DataSet(
                 type='line',
                 label='%s wins' % Aname,
                 data=pos_data,
                 color=GREEN,
-            )
-        )
+                **pr,
+            ),
+            percent_line(95),
+        ]
 
         self.scales = {
             'xAxes': [Axes(type='linear', position='bottom', ticks={"min":0, "max": len(diffs)})],
-            'yAxes': [{"title":metric}]
+            'yAxes': [Axes(ticks={'min':diffs[0],'max':diffs[-1]}),{"title":metric},]
         }
 
         super().__init__()

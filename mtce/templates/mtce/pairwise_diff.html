@@ -3,6 +3,14 @@
 
 {% block sentence_level_charts %}
 <div class="container">
+    <h1>{{ checkpoint_A.nicename }} vs {{ checkpoint_B.nicename }}</h1>
+<form action="{% url 'mtce:pairwise_diff' comparison.id %}" method="post">
+    {% csrf_token %}
+    <input class="checkpoint-selection" type="hidden" name="choice[]" id="choice_{{ checkpoint_B.id }}" value="{{ checkpoint_B.id }}">
+    <input class="checkpoint-selection" type="hidden" name="choice[]" id="choice_{{ checkpoint_A.id }}" value="{{ checkpoint_A.id }}">
+    <button type="submit" class="btn btn-primary">Swap checkpoints</button>
+</form>
+    <hr>
     <div class="row">
         <div class="col-sm">
             {% for ch in sent_level_charts %}
@@ -13,6 +21,7 @@
         <div class="col-sm">
             {% for ch in bootstrap_charts %}
                 <h4>{{ ch.title }}</h4>
+                {{ ch.text_result }}
                 {{ ch.as_html }}
             {% endfor %}
         </div>

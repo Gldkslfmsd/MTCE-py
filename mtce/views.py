@@ -172,12 +172,16 @@ def pairwise_diff(request, comparison_id, system=None):
     print(checkpoint_B, checkpoint_A)
     A = get_object_or_404(Checkpoint, pk=checkpoint_A)
     B = get_object_or_404(Checkpoint, pk=checkpoint_B)
+    A.nicename = A.nice_name()
+    B.nicename = B.nice_name()
     print(checkpoint_A, A)
     print(checkpoint_B, B)
     pass_args = pairwise_index_args(comp, system)
     pa = {
-        'sent_level_charts':sentence_level_charts(A, B)*3,
-        'bootstrap_charts': bootraps(A, B)*2,
+        'sent_level_charts':sentence_level_charts(A, B),
+        'bootstrap_charts': bootraps(A, B),
+        'checkpoint_A': A,
+        'checkpoint_B': B,
     }
     pass_args.update(pa)
     return render(request,

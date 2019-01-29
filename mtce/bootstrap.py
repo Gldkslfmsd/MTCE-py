@@ -45,11 +45,7 @@ def get_mask(lines, sample_id, sample_size=None):
         masks = []
         masks_cache[(lines,sample_size)] = (rs,masks)
     while sample_id+1 > len(masks):
-        if sample_size > lines:
-            replace = True
-        else:
-            replace = False
-        m = rs.choice(lines,sample_size,replace=replace)
+        m = rs.choice(lines,sample_size,replace=True)
         masks.append(m)
     return masks[sample_id]
 
