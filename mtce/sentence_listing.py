@@ -70,3 +70,7 @@ def get_all_sentences(comp, system=None):
     # Transpose. Now it has a shape [[src, ref, checkpoint1, checkpoint2...], [src, ref, ...]]
     sentences = list(zip(*sentences))
     return sentences
+
+
+
+

@@ -26,6 +26,58 @@
             {% endfor %}
         </div>
     </div>
+
+
+    <h3>Confirmed n-grams</h3>
+    <div class="row">
+            {% for n,ntable in confirmed_ngrams %}
+                <div class="col-4">
+                <h4>{{ n }}-grams:</h4>
+                <p>
+               <table class="table table-sm table-hover">
+               {% for ng,a,b,d in ntable %}
+               <tr>
+                   <th>
+                       {{ ng }}
+                   </th>
+                   <td>
+                       {{ a }} - {{ b }} = {{ d }}
+                   </td>
+               </tr>
+               {% endfor %}
+               </table>
+                </p>
+                <hr>
+
+                </div>
+            {% endfor %}
+    </div>
+
+
+    <h3>Unconfirmed n-grams</h3>
+    <div class="row">
+            {% for n,ntable in unconfirmed_ngrams %}
+                <div class="col-4">
+                <h4>{{ n }}-grams:</h4>
+                <p>
+               <table class="table table-sm table-hover">
+               {% for ng,a,b,d in ntable %}
+               <tr>
+                   <th>
+                       {{ ng }}
+                   </th>
+                   <td>
+                       {{ a }} - {{ b }} = {{ d }}
+                   </td>
+               </tr>
+               {% endfor %}
+               </table>
+                </p>
+                <hr>
+
+                </div>
+            {% endfor %}
+    </div>
 </div>
 {% endblock %}
 

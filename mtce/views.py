@@ -10,6 +10,8 @@ from .sentence_listing import get_all_sentences
 from .pairwise_diff import *
 import random
 
+from .ngrams import get_all_confirmed_ngrams, get_all_unconfirmed_ngrams
+
 def get_comparisons():
     return Comparison.objects.all() #order_by('name') \
        # .annotate(documents=Count('document')) \
@@ -169,19 +171,31 @@ def pairwise_index(request, comparison_id, system=None):
 def pairwise_diff(request, comparison_id, system=None):
     comp = get_object_or_404(Comparison, pk=comparison_id)
     checkpoint_A, checkpoint_B = map(int,request.POST.getlist("choice[]"))
-    print(checkpoint_B, checkpoint_A)
     A = get_object_or_404(Checkpoint, pk=checkpoint_A)
     B = get_object_or_404(Checkpoint, pk=checkpoint_B)
     A.nicename = A.nice_name()
     B.nicename = B.nice_name()
-    print(checkpoint_A, A)
-    print(checkpoint_B, B)
     pass_args = pairwise_index_args(comp, system)
+
+
+    def open_toks(fn):
+        with open(fn,"r") as f:
+            return [l.split() for l in f.readlines()]
+
+    reference = open_toks(A.reference())
+    transA = open_toks(A.translationfile())
+    transB = open_toks(B.translationfile())
+
+    conf_ngrams = get_all_confirmed_ngrams(reference, transA, transB, beg=0, end=10)
+    unconf_ngrams = get_all_unconfirmed_ngrams(reference, transA, transB, beg=0, end=10)
+
     pa = {
         'sent_level_charts':sentence_level_charts(A, B),
         'bootstrap_charts': bootraps(A, B),
         'checkpoint_A': A,
         'checkpoint_B': B,
+        'confirmed_ngrams': conf_ngrams,
+        'unconfirmed_ngrams': unconf_ngrams,
     }
     pass_args.update(pa)
     return render(request,
