@@ -137,11 +137,14 @@ class BootstrapChart(Chart):
         self.title = "Paired Bootstrap Resampling %s Differences" % metric
 
         diffs = sorted(A-B)
-
+        same = [d for d in diffs if d == 0]
+        positive = [d for d in diffs if d > 0]
         negative = [d for d in diffs if d < 0]
 
         h = len(negative) / len(diffs)
-        if 1-self.alpha < h < self.alpha:
+        if (positive==[] and negative==[]):
+            self.text_result = "%s and %s seem to be equal." % (Aname, Bname)
+        elif 1-self.alpha < h < self.alpha:
             self.text_result = "The difference between %s and %s is statistically insignificant: p-value = 0.5." % (Aname, Bname)
         elif h >= self.alpha:
             self.text_result = "%s is statistically worse than %s: p-value < 0.5 (significant)" % (Aname, Bname)
@@ -150,8 +153,7 @@ class BootstrapChart(Chart):
 
         #self.text_result += str(h)
 
-        same = [d for d in diffs if d == 0]
-        positive = [d for d in diffs if d > 0]
+
 
 #        self.datasets = [DataSet(type="line",label="sdfsfds",data={"x":list(range(len(negative))), "y":negative})]
 
