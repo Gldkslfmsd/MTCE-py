@@ -24,7 +24,7 @@ urlpatterns = [
 
     path('comparison/<int:comparison_id>/sentences/', views.sentences, name='comparison_sentences'),
 
-    path('comparison/<int:comparison_id>/sentences/<str:orderby>/<str:dir>/<int:beg>/<int:end>/', views.sentences_query, name="comparison_sentences_query"),
+    path('comparison/<int:comparison_id>/sentences/<str:orderby>/<str:first>/<str:diff>/<str:dir>/<int:beg>/<int:end>/', views.sentences_query, name="comparison_sentences_query"),
 
     path('system/<int:system_id>/', views.system_index, name='system_index'),
     path('system/<int:system_id>/sentences/', views.system_sentences, name='system_sentences'),

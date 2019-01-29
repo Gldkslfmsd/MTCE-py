@@ -17,12 +17,14 @@ class Sentence:
         if metrics_values is None:
             metrics_values = []
         self.metrics_values = metrics_values
+        self.metrics_float_values = list(map(float,metrics_values))
         if metrics is None:
             metrics = []
         self.metrics = metrics
         self.has_metrics = metrics_values != []
 
     def add_metric_value(self, metric, value):
+        self.metrics_float_values.append(value)
         value = "%2.2f" % value
         self.metrics_values.append(value)
         if metric not in self.metrics:
@@ -31,7 +33,7 @@ class Sentence:
 
     def orderkey(self, metric):
         assert metric in self.metrics
-        return self.metrics_values[self.metrics.index(metric)]
+        return self.metrics_float_values[self.metrics.index(metric)]
 
 
 

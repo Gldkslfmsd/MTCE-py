@@ -25,18 +25,35 @@ $(document).ready(function() {
 
     $("#all-done").hide();
     var btn_on = "btn-display-on";
-    var batch_size = 2;
+    var batch_size = 50;
     var beg = 0;
     var end = batch_size;
 
     function fetch_sentences(beg, end, prev) {
         var orderby = $("#select-order-by").val();
+        var first = $("#select-first").val();
+        var diff = $("#select-diff").val();
+        if (orderby != "document" && orderby != "random") {
+            if (first=="-") {
+                alert("A checkpoint must be specify to order the sentences by metric on it.");
+                return false;
+            }
+        }
         if ($("#button-order-asc").hasClass(btn_on)) {
             var dir = "asc";
         } else {
             var dir = "desc";
         }
-        $.get("/mtce/comparison/{{ comparison.id }}/sentences/" + orderby + "/" + dir + "/".concat(beg, "/", end, "/"), function (data, status) {
+
+        var url = "/mtce/comparison/{{ comparison.id }}/sentences/".concat(
+            orderby, "/",
+            first, '/',
+            diff, '/',
+            dir,"/",
+            beg, "/", end, "/"
+        );
+
+        $.get(url, function (data, status) {
             if (prev==false)
                 prev = "";
             $("#sentences-div").html(prev+data);
@@ -71,13 +88,25 @@ $(document).ready(function() {
 
     // set it working
     $("#button-load-next").click(load_next_sentence_tables);
-    //
     $("#sentences-div").show(reload_sentence_tables);
-
     //$("#select-order-by").change(reload_sentence_tables);
     $("#btn-show-sentences").click(reload_sentence_tables);
 
 
+    // disable select-first and select-other on "order in document" or "random" order
+    function reset_first_diff_select() {
+        var orderby = $("#select-order-by").val();
+        if ((orderby == "document") || orderby == "random") {
+            $("#select-diff").prop('disabled', 'disabled');
+            $("#select-first").prop('disabled', 'disabled');
+        } else {
+            $("#select-diff").prop('disabled', false);
+            $("#select-first").prop('disabled', false);
+        }
+
+    }
+    reset_first_diff_select();
+    $("#select-order-by").change(reset_first_diff_select);
 
 
 
@@ -177,7 +206,7 @@ $(document).ready(function() {
                 <option value="random">random</option>
             </select>
             <span class="select-order">on</span>
-            <select class="select-order form-control-static" id="select-main">
+            <select class="select-order form-control-static" id="select-first">
                 <option value="-"></option>
                 {% for s in first_sentences %}
                     {% if s.has_metrics %}
@@ -186,7 +215,7 @@ $(document).ready(function() {
                 {% endfor %}
             </select>
             <span class="select-order">minus</span>
-            <select class="select-order form-control-static" id="select-other">
+            <select class="select-order form-control-static" id="select-diff">
                 <option value="-"></option>
                 {% for s in first_sentences %}
                     {% if s.has_metrics %}

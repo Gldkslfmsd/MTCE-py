@@ -60,45 +60,56 @@ def system_index(request, system_id):
 
 
 
-def sentences_query(request, comparison_id, orderby, dir, system=None, beg=0, end=100):
+def sentences_query(request, comparison_id, orderby, first, diff, dir, system=None, beg=0, end=100):
     comp = get_object_or_404(Comparison, pk=comparison_id)
 
     sentences = get_all_sentences(comp,system)
+
+    if sentences == []:
+        return HttpResponse("")
+
     if orderby == "document":
         if dir == "desc":
             sentences = sentences[::-1]
     elif orderby == "random":
         random.shuffle(sentences)
     else:
+        _, metric = orderby.split(">>>")
+        _, cp = first.split(">>>")
+        cp = int(cp)
+        indeces = [ s.id for s in sentences[0]]
+        first_ind = indeces.index(cp)
+        if diff != "-":
+            _, diff = diff.split(">>>")
+            diff = int(diff)
+            diff_ind = indeces.index(diff)
+            def orderkey(sents):
+                return sents[first_ind].orderkey(metric) - sents[diff_ind].orderkey(metric)
+        else:
+            def orderkey(sents):
+                return sents[first_ind].orderkey(metric)
+
         if dir == "desc":
             reverse = True
         else:
             reverse = False
-        _, metric, cp = orderby.split(">>>")
-        cp = int(cp)
-        def orderkey(sents):
-            for s in sents:
-                if s.id == cp:
-                    return s.orderkey(metric)
         sentences = sorted(sentences, key=orderkey, reverse=reverse)
 
     sentences = sentences[beg:end]
-    if (sentences!=[]):
-        pass_args = {
-                       'active':"sentences",  # for top menu
-                       'comparison': comp,
-                       'system': system,
-                       'sentences': sentences,
-                       'first_sentences': sentences[0],
-                       'checkpoint_names': [ s.name for s in sentences[0] if s.has_metrics ],
-                       'metrics': sentences[0][-1].metrics,
-                       }
-        return render(request,
-                      'mtce/sentences_tables.html',
-                       pass_args,
-                      )
-    else:
-        return HttpResponse("")
+    pass_args = {
+                   'active':"sentences",  # for top menu
+                   'comparison': comp,
+                   'system': system,
+                   'sentences': sentences,
+                   'first_sentences': sentences[0],
+                   'checkpoint_names': [ s.name for s in sentences[0] if s.has_metrics ],
+                   'metrics': sentences[0][-1].metrics,
+                   }
+    return render(request,
+                  'mtce/sentences_tables.html',
+                   pass_args,
+                  )
+
 
 
 def sentences(request, comparison_id, system=None):
