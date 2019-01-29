@@ -5,72 +5,77 @@
 
 
 <script>
-$(document).ready(function(){
-    $("#all-done").hide();
+$(document).ready(function() {
 
-    var btn_on = "btn-display-on";
-    var load_next_batch = "load_next_batch";
-    var batch_size = 50;
-    var beg = 0;
-    var end = batch_size;
+
+    // load-hide some rows with sentences according to the buttons
     function reset_sentence_visibility() {
         {% for s in first_sentences %}
             if ($("#btn-display_{{ s.id }}").hasClass(btn_on)) {
                 $(".sent_{{ s.id }}").show();
-           //     $('#sss').text($('#sss').text()+"   show {{ s.id }} {{ s.name }} ||| ");
             } else {
                 $(".sent_{{ s.id }}").hide();
-           //    $('#sss').text($('#sss').text()+" hide {{ s.id }} {{ s.name }} ||| ");
             }
         {% endfor %}
     }
-    function reload_sentence_tables() {
-        $("#button-load-next").show();
-        $("#all-done").hide();
-        beg = 0;
-        end = batch_size;
+
+    /////////////////////////////
+    ////   loading sentences
+    /////////////////////////////
+
+    $("#all-done").hide();
+    var btn_on = "btn-display-on";
+    var batch_size = 2;
+    var beg = 0;
+    var end = batch_size;
+
+    function fetch_sentences(beg, end, prev) {
         var orderby = $("#select-order-by").val();
         if ($("#button-order-asc").hasClass(btn_on)) {
             var dir = "asc";
         } else {
             var dir = "desc";
         }
-        $.get("/mtce/comparison/{{ comparison.id }}/sentences/"+orderby+"/"+dir+"/".concat(beg,"/",end,"/"), function(data, status) {
-            $("#sentences-div").html(data);
+        $.get("/mtce/comparison/{{ comparison.id }}/sentences/" + orderby + "/" + dir + "/".concat(beg, "/", end, "/"), function (data, status) {
+            if (prev==false)
+                prev = "";
+            $("#sentences-div").html(prev+data);
             reset_sentence_visibility();
-            //$("."+load_next_batch).show(function() {
-             //   $('#sss').text($('#sss').text()+" tady");
-            //});
-//            $("#sentences-tables-end").show(load_next_sentence_tables);
-        });
-    }
-
-    function load_next_sentence_tables() {
-        beg = beg + batch_size;
-        end = end + batch_size;
-        var orderby = $("#select-order-by").val();
-        if ($("#button-order-asc").hasClass(btn_on)) {
-            var dir = "asc";
-        } else {
-            var dir = "desc";
-        }
-        $.get("/mtce/comparison/{{ comparison.id }}/sentences/"+orderby+"/"+dir+"/".concat(beg,"/",end,"/"), function(data, status) {
-            var previous = $("#sentences-div").html();
-            $("#sentences-div").html(previous+data);
-            reset_sentence_visibility();
-
-            if (data=="") {
+            if ((prev!=false) && (data=="")) {
                 $("#button-load-next").hide();
                 $("#all-done").show();
             }
-            //$("#sentences-tables-end").show(load_next_sentence_tables);
         });
     }
 
-    $("#button-load-next").click(load_next_sentence_tables);
+    // reload all sentences from the first
+    function reload_sentence_tables() {
+        $("#button-load-next").show();
+        $("#all-done").hide();
 
+        beg = 0;
+        end = batch_size;
+
+        fetch_sentences(beg, end, false);
+
+    }
+
+    // load next batch of sentences when a user scrolls down to the end
+    function load_next_sentence_tables() {
+        beg = beg + batch_size;
+        end = end + batch_size;
+
+        var previous = $("#sentences-div").html();
+        fetch_sentences(beg, end, previous);
+    }
+
+    // set it working
+    $("#button-load-next").click(load_next_sentence_tables);
+    //
     $("#sentences-div").show(reload_sentence_tables);
-    $("#select-order-by").change(reload_sentence_tables);
+
+    //$("#select-order-by").change(reload_sentence_tables);
+    $("#btn-show-sentences").click(reload_sentence_tables);
 
 
 
@@ -111,14 +116,14 @@ $(document).ready(function(){
         reset_btn(b);
         b = $("#button-order-desc");
         reset_btn(b);
-        reload_sentence_tables();
+//        reload_sentence_tables();
     });
     $("#button-order-desc").click(function(){
         b = $("#button-order-desc");
         reset_btn(b);
         b = $("#button-order-asc");
         reset_btn(b);
-        reload_sentence_tables();
+ //       reload_sentence_tables();
     });
 
 
@@ -160,22 +165,46 @@ $(document).ready(function(){
             <select class="form-control-static" id="select-order-by">
                 <option value="document">order in document</option>
                 {% for metric in metrics %}
+                    <option value="metric>>>{{ metric }}">{{ metric }}</option>
+                    {% comment %}
                     {% for s in first_sentences %}
                         {% if s.has_metrics %}
                             <option value="metric>>>{{ metric }}>>>{{ s.id }}">{{ metric }} on {{ s.name }}</option>
                         {% endif %}
                     {% endfor %}
+                    {% endcomment %}
                 {% endfor %}
                 <option value="random">random</option>
+            </select>
+            <span class="select-order">on</span>
+            <select class="select-order form-control-static" id="select-main">
+                <option value="-"></option>
+                {% for s in first_sentences %}
+                    {% if s.has_metrics %}
+                        <option value="checkpoint>>>{{ s.id }}">{{ s.name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            <span class="select-order">minus</span>
+            <select class="select-order form-control-static" id="select-other">
+                <option value="-"></option>
+                {% for s in first_sentences %}
+                    {% if s.has_metrics %}
+                        <option value="checkpoint>>>{{ s.id }}">{{ s.name }}</option>
+                    {% endif %}
+                {% endfor %}
+                <option value="others">maximum from others</option>
             </select>
             <div class="btn-group">
                 <button id="button-order-asc" type="button" class="btn  btn-success btn-display-on btn-sm">Ascending</button>
                 <button id="button-order-desc" type="button" class="btn btn-secondary btn-sm">Descending</button>
             </div>
+                <button id="btn-show-sentences" class="btn btn-primary btn-display-on">Show</button>
         </div>
-        <button id="btn-show-sentence-metrics" class="btn btn-success btn-display-on">Show sentence metrics</button>
 
     </div>
+
+        <button id="btn-show-sentence-metrics" class="btn btn-success btn-display-on">Show sentence metrics</button>
 </span>
 {% endwith %}
 

@@ -42,7 +42,7 @@ def get_translation_sentences(checkpoint, show):
     sent_ev_dict = checkpoint.get_sentence_evaluations_dict()
     for m in METRICS:
         if m not in sent_ev_dict: continue
-        values = sent_ev_dict[m].float_values()
+        values = sent_ev_dict[m]
         for sent, v in zip(sents, values):
             sent.add_metric_value(m,v)
     return sents
