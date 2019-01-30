@@ -38,12 +38,12 @@ class Command(BaseCommand):
             with transaction.atomic():
                 importing_loop_iteration()
     #        deleting_loop()
-            #em.evaluation_manager_iteration()
+            em.evaluation_manager_iteration()
             #pickle_masks_cache()
             if not infinite:
                 break
             print()
-            time.sleep(10)
+            time.sleep(1)
 
 
 
@@ -95,6 +95,14 @@ def check_comparison(path):
                 DataImport.reimport(pfile, file)
             else:
                 import_log("  reimport not needed",pfile)
+        elif file.startswith("source."):
+            mf = maybe_create_metasource(path, file)
+            if mf is not None:
+                mf.save()
+        elif file.startswith("reference."):
+            mf = maybe_create_metareference(path, file)
+            if mf is not None:
+                mf.save()
 #        else:
 #            import_log("skipping %s" % file)
 

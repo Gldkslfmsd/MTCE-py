@@ -52,10 +52,21 @@ def get_translation_sentences(checkpoint, show):
 def get_nontranslation_sentences(id,name, texts, show):
     return [Sentence(id, name, t, show) for t in texts ]
 
+def get_metasentences(mf, id, show):
+    return [Sentence(id, mf.name, t, show) for t in mf.get_sentences()]
+
 def get_all_sentences(comp, system=None):
     # src and ref
-    sentences = [get_nontranslation_sentences("src","source",comp.get_plain_sentences("source"),True),
-                get_nontranslation_sentences("ref","reference",comp.get_plain_sentences("reference"),True)]
+    sentences = [get_nontranslation_sentences("src","source",comp.get_plain_sentences("source"),True)]
+    for mf in comp.get_metafiles():
+        if mf.owner_type == type_dict["source.txt"]:
+            s = get_metasentences(mf, "meta-src", False)
+            sentences.append(s)
+    sentences.append(get_nontranslation_sentences("ref","reference",comp.get_plain_sentences("reference"),True))
+    for mf in comp.get_metafiles():
+        if mf.owner_type == type_dict["reference.txt"]:
+            s = get_metasentences(mf, "meta-ref", False)
+            sentences.append(s)
 
     if system is None:
         systems_checkpoints = comp.systems_checkpoints()

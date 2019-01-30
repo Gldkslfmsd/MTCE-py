@@ -53,6 +53,8 @@ class ModelBase():
         return True
 
 
+
+
 class FileWrapper(ModelBase, models.Model):
 
     name = models.CharField(max_length=200)
@@ -103,6 +105,13 @@ class FileWrapper(ModelBase, models.Model):
     def structure_corrupted(self):
         raise NotImplementedError()
 
+    def get_metafiles(self):
+        mf = MetaFile.objects.filter(owner=self)
+        return list(mf)
+
+    def nice_name(self):
+        return self.name
+
 
 class MetaFile(models.Model):
 
@@ -120,16 +129,27 @@ class MetaFile(models.Model):
         with open(self.file.name, "r") as f:
             return f.readlines()
 
-def maybe_create_metatranslation(path, filename):
-    fn = os.path.join(path, filename)
+def maybe_create_metafile(path, filename, type, ownerType):
     cpname = os.path.basename(path)
-    n = filename.replace("translation.txt","").replace("translation.","").replace(".txt","")
-    checkpoint = Checkpoint.objects.get(name=cpname)
-    if not MetaFile.objects.filter(name=n,owner=checkpoint).exists():
-        n = checkpoint.nice_name()+":"+n
-        mf = MetaFile(name=n, file=fn, owner=checkpoint, owner_type=type_dict['translation.txt'])
+    n = filename.replace(type+".txt","").replace(type+".","").replace(".txt","")
+    owner = ownerType.objects.get(name=cpname)
+    if type == "translation":
+        n = owner.nice_name()+":"+n
+    else:
+        n = type+":"+n
+    if not MetaFile.objects.filter(name=n,owner=owner).exists():
+        fn = os.path.join(path, filename)
+        mf = MetaFile(name=n, file=fn, owner=owner, owner_type=type_dict[type+'.txt'])
         return mf
     return None
+
+def maybe_create_metatranslation(path, filename):
+    return maybe_create_metafile(path, filename, "translation", Checkpoint)
+
+def maybe_create_metasource(path, filename):
+    return maybe_create_metafile(path, filename, "source", Comparison)
+def maybe_create_metareference(path, filename):
+    return maybe_create_metafile(path, filename, "reference", Comparison)
 
 class Comparison(FileWrapper):
 
@@ -200,6 +220,7 @@ class Comparison(FileWrapper):
         for _,ch in self.systems_checkpoints():
             print("comparison: scheduling evaluation for ",ch)
             ch.schedule_evaluation()
+
 
 
 
@@ -338,9 +359,6 @@ class Checkpoint(FileWrapper):
         sev = SentenceEvaluations.objects.filter(evaluation__in=ev)
         return list(sev)
 
-    def get_metafiles(self):
-        mf = MetaFile.objects.filter(owner=self)
-        return list(mf)
 
     def get_bootstrap_values(self):
         """:return list of SentenceEvaluation objects for this checkpoint """

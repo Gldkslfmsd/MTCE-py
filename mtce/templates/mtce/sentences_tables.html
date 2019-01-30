@@ -1,3 +1,6 @@
+{% if metrics_available %}{% else %}
+    <p>Sentence metrics are unavailable.</p>
+{% endif %}
          {% for sent in sentences %}
                 <table class="table table-sm">
                     {% comment %}        <caption>Sentence {{ forloop.counter }}:</caption>
@@ -15,26 +18,28 @@
                             </table>
                             </tr>
 
-                            <tr>
-                                <table  class="{{ tableclasses }} table-sent-metrics">
-                                    <tr>
-                                        <th width="10%"></th>
-                                        {% for m in metrics %}
-                                            <th>{{ m }}</th>
+                            {% if metrics_available %}
+                                <tr>
+                                    <table  class="{{ tableclasses }} table-sent-metrics">
+                                        <tr>
+                                            <th width="10%"></th>
+                                            {% for m in metrics %}
+                                                <th>{{ m }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                        {% for s in sent %}
+                                            {% if s.has_metrics %}
+                                                <tr class="sent_{{ s.id }}">
+                                                    <th width="10%">{{ s.name }}</th>
+                                                    {% for v in s.metrics_values %}
+                                                        <td>{{ v }}</td>
+                                                    {% endfor %}
+                                                </tr>
+                                            {% endif %}
                                         {% endfor %}
-                                    </tr>
-                                    {% for s in sent %}
-                                        {% if s.has_metrics %}
-                                            <tr class="sent_{{ s.id }}">
-                                                <th width="10%">{{ s.name }}</th>
-                                                {% for v in s.metrics_values %}
-                                                    <td>{{ v }}</td>
-                                                {% endfor %}
-                                            </tr>
-                                        {% endif %}
-                                    {% endfor %}
-                                </table>
-                            </tr>
+                                    </table>
+                                </tr>
+                            {% endif %}
                         {% endwith %}
                 </table>
             {% endfor %}

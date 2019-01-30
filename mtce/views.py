@@ -104,6 +104,12 @@ def sentences_query(request, comparison_id, orderby, first, diff, dir, system=No
         sentences = sorted(sentences, key=orderkey, reverse=reverse)
 
     sentences = sentences[beg:end]
+    if sentences == []:
+        return HttpResponse("")
+    metrics = []
+    for s in sentences[0]:
+        if s.has_metrics:
+            metrics = s.metrics
     pass_args = {
                    'active':"sentences",  # for top menu
                    'comparison': comp,
@@ -111,7 +117,8 @@ def sentences_query(request, comparison_id, orderby, first, diff, dir, system=No
                    'sentences': sentences,
                    'first_sentences': sentences[0],
                    'checkpoint_names': [ s.name for s in sentences[0] if s.has_metrics ],
-                   'metrics': sentences[0][-1].metrics,
+                   'metrics': metrics,
+                    'metrics_available': metrics != [],
                    }
     return render(request,
                   'mtce/sentences_tables.html',
