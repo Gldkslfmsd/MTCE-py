@@ -9,11 +9,12 @@ import shutil
 import multiprocessing
 
 def info(msg, *a):
-    print("INFO: %s" % (msg), *a)
+    #print("INFO: %s" % (msg), *a)
+    return
 
 def import_log(msg="", *a):
-    #return
-    print("IMPORT:",msg, *a)
+    return
+   # print("IMPORT:",msg, *a)
 
 class Command(BaseCommand):
 
@@ -42,7 +43,7 @@ class Command(BaseCommand):
             #pickle_masks_cache()
             if not infinite:
                 break
-            print()
+            #print()
             time.sleep(1)
 
 
@@ -206,7 +207,7 @@ class EvaluationManager:
         return job
 
     def evaluation_manager_iteration(self):
-        print("evaluation manager iteration...")
+#        print("evaluation manager iteration...")
         jobs = EvalJob.acquire_pack_of_jobs(1000)
         for job in jobs:
             print("launching",job)
