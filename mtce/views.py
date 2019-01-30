@@ -81,7 +81,13 @@ def sentences_query(request, comparison_id, orderby, first, diff, dir, system=No
         cp = int(cp)
         indeces = [ s.id for s in sentences[0]]
         first_ind = indeces.index(cp)
-        if diff != "-":
+        if diff == 'max-others':
+            others = [ s.id for s in sentences[0] if s.id != cp and s.has_metrics ]
+            other_ind = [ indeces.index(o) for o in others ]
+            print(other_ind)
+            def orderkey(sents):
+                return sents[first_ind].orderkey(metric) - max(sents[i].orderkey(metric) for i in other_ind)
+        elif diff != "-":
             _, diff = diff.split(">>>")
             diff = int(diff)
             diff_ind = indeces.index(diff)
