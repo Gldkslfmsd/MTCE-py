@@ -2,83 +2,112 @@
 
 
 {% block sentence_level_charts %}
-<div class="container">
-    <h1>{{ checkpoint_A.nicename }} vs {{ checkpoint_B.nicename }}</h1>
+
+<!-- title -->
+<h1>{{ checkpoint_A.nicename }} vs {{ checkpoint_B.nicename }}</h1>
 <form action="{% url 'mtce:pairwise_diff' comparison.id %}" method="post">
     {% csrf_token %}
     <input class="checkpoint-selection" type="hidden" name="choice[]" id="choice_{{ checkpoint_B.id }}" value="{{ checkpoint_B.id }}">
     <input class="checkpoint-selection" type="hidden" name="choice[]" id="choice_{{ checkpoint_A.id }}" value="{{ checkpoint_A.id }}">
     <button type="submit" class="btn btn-primary">Swap checkpoints</button>
 </form>
-    <hr>
-    <div class="row">
-        <div class="col-sm">
-            {% for ch in sent_level_charts %}
-                <h4>{{ ch.title }}</h4>
-                {{ ch.as_html }}
-            {% endfor %}
+<hr>
+<!-- end title -->
+
+
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a class="nav-link active show" data-toggle="tab" href="#bootstrap">Bootstrap</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link show" data-toggle="tab" href="#confirmed">Confirmed n-grams</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link show" data-toggle="tab" href="#unconfirmed">Unconfirmed n-grams</a>
+  </li>
+</ul>
+<div id="myTabContent" class="tab-content">
+  <div class="tab-pane fade active show" id="bootstrap">
+
+      <!-- start bootstrap charts -->
+      <div class="container">
+        <div class="row">
+            <div class="col-sm">
+                {% for ch in sent_level_charts %}
+                    <h4>{{ ch.title }}</h4>
+                    {{ ch.as_html }}
+                {% endfor %}
+            </div>
+            <div class="col-sm">
+                {% for ch in bootstrap_charts %}
+                    <h4>{{ ch.title }}</h4>
+                    {{ ch.text_result }}
+                    {{ ch.as_html }}
+                {% endfor %}
+            </div>
         </div>
-        <div class="col-sm">
-            {% for ch in bootstrap_charts %}
-                <h4>{{ ch.title }}</h4>
-                {{ ch.text_result }}
-                {{ ch.as_html }}
-            {% endfor %}
-        </div>
-    </div>
+      </div>
+      <!-- end bootstrap charts -->
 
+  </div>
+  <div class="tab-pane fade" id="confirmed">
+      <!-- start confirmed -->
+      <div class="container">
+          <div class="row">
+              {% for n,ntable in confirmed_ngrams %}
+                 <div class="col-4">
+                    <h4>{{ n }}-grams:</h4>
+                   <table class="table table-sm table-hover">
+                   {% for ng,a,b,d in ntable %}
+                       <tr>
+                           <th>
+                               {{ ng }}
+                           </th>
+                           <td>
+                               {{ a }} - {{ b }} = {{ d }}
+                           </td>
+                       </tr>
+                   {% endfor %}
+                   </table>
+                   <hr>
+                 </div>
+              {% endfor %}
+          </div>
+      </div>
+      <!-- end confirmed -->
+  </div>
 
-    <h3>Confirmed n-grams</h3>
-    <div class="row">
-            {% for n,ntable in confirmed_ngrams %}
-                <div class="col-4">
-                <h4>{{ n }}-grams:</h4>
-                <p>
-               <table class="table table-sm table-hover">
-               {% for ng,a,b,d in ntable %}
-               <tr>
-                   <th>
-                       {{ ng }}
-                   </th>
-                   <td>
-                       {{ a }} - {{ b }} = {{ d }}
-                   </td>
-               </tr>
-               {% endfor %}
-               </table>
-                </p>
-                <hr>
-
-                </div>
-            {% endfor %}
-    </div>
-
-
-    <h3>Unconfirmed n-grams</h3>
-    <div class="row">
+  <div class="tab-pane fade" id="unconfirmed">
+    <!-- start confirmed -->
+    <div class="container">
+        <div class="row">
             {% for n,ntable in unconfirmed_ngrams %}
                 <div class="col-4">
-                <h4>{{ n }}-grams:</h4>
-                <p>
-               <table class="table table-sm table-hover">
-               {% for ng,a,b,d in ntable %}
-               <tr>
-                   <th>
-                       {{ ng }}
-                   </th>
-                   <td>
-                       {{ a }} - {{ b }} = {{ d }}
-                   </td>
-               </tr>
-               {% endfor %}
-               </table>
-                </p>
-                <hr>
-
+                    <h4>{{ n }}-grams:</h4>
+                    <table class="table table-sm table-hover">
+                    {% for ng,a,b,d in ntable %}
+                        <tr>
+                            <th>
+                                {{ ng }}
+                            </th>
+                           <td>
+                               {{ a }} - {{ b }} = {{ d }}
+                           </td>
+                        </tr>
+                   {% endfor %}
+                   </table>
+                   <hr>
                 </div>
             {% endfor %}
+        </div>
     </div>
+    <!-- end confirmed -->
+  </div>
 </div>
+
+
+
+
 {% endblock %}
 
 
