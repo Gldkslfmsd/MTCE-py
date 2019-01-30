@@ -12,7 +12,7 @@ def info(msg, *a):
     print("INFO: %s" % (msg), *a)
 
 def import_log(msg="", *a):
-    return
+    #return
     print("IMPORT:",msg, *a)
 
 class Command(BaseCommand):
@@ -38,12 +38,12 @@ class Command(BaseCommand):
             with transaction.atomic():
                 importing_loop_iteration()
     #        deleting_loop()
-            em.evaluation_manager_iteration()
+            #em.evaluation_manager_iteration()
             #pickle_masks_cache()
             if not infinite:
                 break
             print()
-            time.sleep(1)
+            time.sleep(10)
 
 
 
@@ -72,7 +72,7 @@ def import_comparison(path):
                     cp = create_Checkpoint(cdir,trans,sys)
                     cp.save()
 #                    di = create_DataImport(trans,'translation.txt',cp)
-#                    import_log("     creating Checkpoint",cp)
+                    import_log("     creating Checkpoint",cp)
 #                    di.save()
         else:
             if dir not in ("source.txt","reference.txt"):
@@ -135,6 +135,14 @@ def check_checkpoint(path,sys=None,comp=None):
                 import_log("  reimported")
             else:
                 import_log("  needs reimport: False")
+
+        for f in files:
+            if f == "translation.txt": continue
+            if f.startswith("translation"):
+                m = maybe_create_metatranslation(path, f)
+                if m is not None:
+                    m.save()
+
 
 
 def importing_loop_iteration(infinite=True):

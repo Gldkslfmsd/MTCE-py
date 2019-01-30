@@ -66,6 +66,9 @@ def get_all_sentences(comp, system=None):
     for i,(sys,cp) in enumerate(systems_checkpoints):
         s = get_translation_sentences(cp,i<2)
         sentences.append(s)
+        for mf in cp.get_metafiles():
+            s = get_nontranslation_sentences("meta-%s" % cp.id, mf.name, mf.get_sentences(), i<2)
+            sentences.append(s)
 
     # Transpose. Now it has a shape [[src, ref, checkpoint1, checkpoint2...], [src, ref, ...]]
     sentences = list(zip(*sentences))

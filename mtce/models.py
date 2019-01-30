@@ -104,7 +104,32 @@ class FileWrapper(ModelBase, models.Model):
         raise NotImplementedError()
 
 
+class MetaFile(models.Model):
 
+    name = models.CharField(max_length=200)
+    file = models.FileField(
+        upload_to=ModelBase.upload_to_tmp,
+        help_text=_("Metafile name")
+    )
+
+    owner = models.ForeignKey(FileWrapper, on_delete=models.CASCADE)
+    owner_type = models.IntegerField()
+    description = models.TextField(max_length=2000,default="")
+
+    def get_sentences(self):
+        with open(self.file.name, "r") as f:
+            return f.readlines()
+
+def maybe_create_metatranslation(path, filename):
+    fn = os.path.join(path, filename)
+    cpname = os.path.basename(path)
+    n = filename.replace("translation.txt","").replace("translation.","").replace(".txt","")
+    checkpoint = Checkpoint.objects.get(name=cpname)
+    if not MetaFile.objects.filter(name=n,owner=checkpoint).exists():
+        n = checkpoint.nice_name()+":"+n
+        mf = MetaFile(name=n, file=fn, owner=checkpoint, owner_type=type_dict['translation.txt'])
+        return mf
+    return None
 
 class Comparison(FileWrapper):
 
@@ -312,6 +337,10 @@ class Checkpoint(FileWrapper):
         ev = Evaluation.objects.filter(checkpoint=self)
         sev = SentenceEvaluations.objects.filter(evaluation__in=ev)
         return list(sev)
+
+    def get_metafiles(self):
+        mf = MetaFile.objects.filter(owner=self)
+        return list(mf)
 
     def get_bootstrap_values(self):
         """:return list of SentenceEvaluation objects for this checkpoint """

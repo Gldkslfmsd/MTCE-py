@@ -45,6 +45,7 @@ admin.site.register(Comparison, ComparisonAdmin)
 #admin.site.register(Checkpoint)
 
 admin.site.register(DataImport)
+admin.site.register(MetaFile)
 admin.site.register(BootstrapValues)
 admin.site.register(SentenceEvaluations)
 admin.site.register(EvalJob, EvalJobAdmin)
