@@ -93,7 +93,7 @@ to your `files/comparisons`, if necessary.
 
 - Run `python3 manage.py background_importer`. The data should be evaluating and loading.
 
-- You can repeat importing with `cp empty-db.slqlite3 db.sqlite3`. 
+- You can repeat importing with `cp empty-db.sqlite3 db.sqlite3`. 
 
 - You can skip the background importer with `cp demo-db.sqlite3 db.sqlite3`. You should see several 
 comparisons. 
