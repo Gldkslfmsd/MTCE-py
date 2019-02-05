@@ -15,13 +15,6 @@ We make MTCE **fast** in loading and evaluation new translation tasks. We use
 MTCE-py will have the same function as the original, plus new features. 
 It already supports displaying optional metainformation for every translation sentence.
 
-## Online demo
-
-Try it here:
-http://u-pl0.ms.mff.cuni.cz:8000/mtce/ .
-
-If it's down, please, contact machacek@ufal.mff.cuni.cz.
-
 ## Install
 
 - clone this repo, go inside
